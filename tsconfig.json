@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "baseUrl": "./src",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "downlevelIteration": true,
+    "lib": [
+      "DOM",
+      "ESNext"
+    ],
+    "paths": {
+      "mods/*": [
+        "mods/*"
+      ],
+      "libs/*": [
+        "libs/*"
+      ],
+      "tests/*": [
+        "tests/*"
+      ],
+    }
+  },
+  "include": [
+    "./src/index.ts",
+    "./src/index.test.ts"
+  ],
+}
