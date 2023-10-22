@@ -35,7 +35,40 @@ export async function compile(arg: string) {
       continue
     }
 
-    const match = lines[i].match(/(await )?(\$[a-zA-Z0-9]+\$)\([^\)]*\)/)
+    /**
+     * Macro block comment
+     */
+    if (lines[i].trim().startsWith("* @macro")) {
+      /**
+       * Delete start
+       */
+      lines[i - 1] = lines[i - 1].replace("/**", "")
+
+      /**
+       * Delete macro attribute
+       */
+      lines[i] = lines[i].replace("* @macro", "")
+
+      let j = i + 1;
+
+      /**
+       * Delete others
+       */
+      for (; j < lines.length; j++) {
+        if (lines[j].trim().startsWith("*/"))
+          break
+        lines[j] = lines[j].replace("* ", "")
+      }
+
+      /**
+       * Delete end
+       */
+      lines[j] = lines[j].replace("*/", "")
+
+      continue
+    }
+
+    const match = lines[i].match(/(\$[a-zA-Z0-9]+\$)\([^\)]*\)/)
 
     /**
      * Skip if no macro in this line
@@ -43,7 +76,7 @@ export async function compile(arg: string) {
     if (match == null)
       continue
 
-    const [input, _, name] = match
+    const [input, name] = match
 
     /**
      * It's a macro definition
@@ -63,88 +96,89 @@ export async function compile(arg: string) {
         }
       }
 
-      /**
-       * Continue if found or not found
-       */
       continue
     }
 
     /**
      * It's a macro call
      */
+
+    /**
+     * Check if cached
+     */
     {
-      /**
-       * Check if cached
-       */
-      {
-        const output = outputByInput.get(input)
+      const output = outputByInput.get(input)
 
-        if (output != null) {
-          lines[i] = lines[i].replaceAll(input, output)
-          continue
-        }
-      }
-
-      /**
-       * Per-call identifier
-       */
-      const identifier = crypto.randomUUID().split("-")[0]
-
-      const { lastImportLine = 0 } = metadata
-      const imports = lines.slice(0, lastImportLine + 1).join("\n")
-
-      const definition = definitionByName.get(name) ?? ""
-
-      /**
-       * Check if CommonJS
-       */
-      if (typeof require !== "undefined") {
-        throw new Error(`CommonJS not supported yet`)
-      } else {
-        const code = ``
-          + imports
-          + "\n\n"
-          + definition
-          + "\n\n"
-          + `export const output = ${input}`
-
-        fs.writeFileSync(`${dirname}/${identifier}.eval.ts`, code, "utf8")
-
-        const { emitSkipped } = ts.createProgram([
-          `${dirname}/${identifier}.eval.ts`
-        ], {
-          module: ts.ModuleKind.ESNext,
-          outDir: `${dirname}/.macros/`
-        }).emit()
-
-        if (emitSkipped)
-          throw new Error(`Transpilation failed`)
-
-        const { output } = await import(`${dirname}/.macros/${identifier}.eval.js`)
-
-        if (typeof output !== "string")
-          throw new Error(`Evaluation failed`)
-
-        /**
-         * Fill the cache
-         */
-        outputByInput.set(input, output)
-
-        /**
-         * Apply
-         */
+      if (output != null) {
         lines[i] = lines[i].replaceAll(input, output)
-
-        /**
-         * Clean
-         */
-        fs.rmSync(`${dirname}/${identifier}.eval.ts`)
+        continue
       }
+    }
+
+    /**
+     * Per-call identifier
+     */
+    const identifier = crypto.randomUUID().split("-")[0]
+
+    const { lastImportLine = 0 } = metadata
+    const imports = lines.slice(0, lastImportLine + 1).join("\n")
+
+    const definition = definitionByName.get(name) ?? ""
+
+    /**
+     * Check if CommonJS
+     */
+    if (typeof require !== "undefined") {
+      throw new Error(`CommonJS not supported yet`)
+    } else {
+      const code = ``
+        + imports
+        + "\n\n"
+        + definition
+        + "\n\n"
+        + `export const output = ${input}`
+
+      fs.writeFileSync(`${dirname}/${identifier}.eval.ts`, code, "utf8")
+
+      const { emitSkipped } = ts.createProgram([
+        `${dirname}/${identifier}.eval.ts`
+      ], {
+        module: ts.ModuleKind.ESNext,
+        outDir: `${dirname}/.macros/`
+      }).emit()
+
+      if (emitSkipped)
+        throw new Error(`Transpilation failed`)
+
+      const { output } = await import(`${dirname}/.macros/${identifier}.eval.js`)
+
+      let awaited = await Promise.resolve(output)
+
+      if (typeof awaited === "undefined")
+        awaited = ""
+
+      if (typeof awaited !== "string")
+        throw new Error(`Evaluation failed`)
+
+      /**
+       * Fill the cache
+       */
+      outputByInput.set(input, awaited)
+
+      /**
+       * Apply
+       */
+      lines[i] = lines[i].replaceAll(input, awaited)
+
+      /**
+       * Clean
+       */
+      fs.rmSync(`${dirname}/${identifier}.eval.ts`)
     }
   }
 
   const output = lines.join("\n")
 
-  fs.writeFileSync(`${dirname}/${basename}.out.ts`, output, "utf8")
+  fs.writeFileSync(`${dirname}/${basename}.ts`, output, "utf8")
   fs.rmSync(`${dirname}/.macros`, { recursive: true, force: true })
 }
