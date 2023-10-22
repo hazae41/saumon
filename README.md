@@ -1,6 +1,6 @@
 # Saumon 🍣
 
-Simple macro system for TypeScript
+Ultra simple macro system for TypeScript
 
 ```bash
 npm i @hazae41/saumon

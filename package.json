@@ -2,7 +2,7 @@
   "type": "module",
   "name": "@hazae41/saumon",
   "version": "0.0.0",
-  "description": "Minimalist macro system for TypeScript",
+  "description": "Ultra simple macro system for TypeScript",
   "homepage": "https://github.com/hazae41/phobos",
   "repository": "github:hazae41/phobos",
   "author": "hazae41",
