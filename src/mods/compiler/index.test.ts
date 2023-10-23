@@ -1,3 +1,1 @@
-import { compile } from "./index.js";
-
-await compile("./test/test.macro.ts")
+console.log("no test")
