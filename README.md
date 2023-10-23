@@ -8,12 +8,6 @@ npm i @hazae41/saumon
 
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
 
-## Summary
-- [Goals](#goals)
-- [Example](#example)
-- [Usage](#usage)
-- [Security](#security)
-
 ## Goals
 - Ultra simple and minimalist
 - Won't interfere with your existing tools
