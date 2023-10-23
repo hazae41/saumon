@@ -56,7 +56,7 @@ The preprocessor will only transform files with `.macro.*` extensions
 
 ### Definition
 
-All macros must be regular functions (not arrow), with one dollar before and one dollar after their name
+All macros must be named with one dollar before and one dollar after their name
 
 ```ts
 function $log$(x: string) {
