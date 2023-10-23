@@ -16,7 +16,7 @@ npm i @hazae41/saumon
 
 ## Goals
 - Ultra simple and minimalist
-- Works on any runtime (Node, Deno, Bun, browser)
+- Won't interfere with your existing tools
 - Can output arbitrary code (TypeScript types, JSX components, JSON data)
 - Resistant to supply-chain attacks
 
