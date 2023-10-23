@@ -27,6 +27,9 @@ export async function compile(arg: string) {
   const lines = input.split("\n")
 
   for (let i = 0; i < lines.length; i++) {
+    if (lines[i] == null)
+      continue
+
     /**
      * Find where code starts
      */
@@ -47,7 +50,7 @@ export async function compile(arg: string) {
       /**
        * Delete macro attribute
        */
-      lines[i] = lines[i].replace("* @macro", "")
+      delete lines[i]
 
       let j = i + 1;
 
@@ -178,7 +181,36 @@ export async function compile(arg: string) {
     }
   }
 
-  const output = lines.join("\n")
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i] == null)
+      continue
+
+    const match = lines[i].match(/function (\$.+\$)(<.+>)?\([^\)]*\)/)
+
+    if (match == null)
+      continue
+    if (lines[i].startsWith("export"))
+      continue
+
+    for (let j = i; j < lines.length; j++) {
+      if (lines[j] == null)
+        continue
+
+      if (lines[j] === "}") {
+        delete lines[j]
+
+        if (lines[j + 1] === "")
+          delete lines[j + 1]
+
+        break
+      } else {
+        delete lines[j]
+        continue
+      }
+    }
+  }
+
+  const output = lines.filter(it => it != null).join("\n")
 
   fs.writeFileSync(`${dirname}/${basename}.${extension}`, output, "utf8")
 }

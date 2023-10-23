@@ -1,5 +1,1 @@
-function $random$(): number {
-  return `${Math.random()}` as any
-}
-
-const x = 0.6893728422710379 * 100
+const x = 0.24714166302329632 * 100
