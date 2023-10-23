@@ -252,7 +252,8 @@ export async function compile(arg: string) {
 
         const [chunk] = await rollup({
           input: `${dirname}/.${identifier}.saumon.${extension}`,
-          plugins: [(ts as any)()]
+          plugins: [(ts as any)()],
+          external: ["tslib"]
         }).then(x => x.write({
           dir: `${dirname}/.${identifier}.saumon/`,
         })).then(x => x.output)
