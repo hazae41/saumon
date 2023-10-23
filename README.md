@@ -6,6 +6,14 @@ Ultra simple macro system for TypeScript
 npm i @hazae41/saumon
 ```
 
+```bash
+saumon build ./src/test.macro.ts
+```
+
+```bash
+saumon build -r ./src
+```
+
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
 
 ## Goals

@@ -4,9 +4,8 @@ import { compile } from "mods/compiler/index.js";
 const [node, main, command, ...args] = process.argv
 
 if (command === "build") {
-  const options = { recursive: false }
-
   const paths = new Array<string>()
+  const options = { recursive: false }
 
   for (const arg of args) {
     if (arg === "-r" || arg === "--recursive") {
