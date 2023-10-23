@@ -6,14 +6,6 @@ Ultra simple macro system for TypeScript
 npm i @hazae41/saumon
 ```
 
-```bash
-saumon build ./src/test.macro.ts
-```
-
-```bash
-saumon build -r ./src
-```
-
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
 
 ## Goals
@@ -44,9 +36,23 @@ console.log("hello world")
 
 A macro is like a regular JS function, but the preprocessor will replace all its calls by the string value it returns
 
+### CLI
+
+You can transform a single file
+
+```bash
+saumon build ./src/test.macro.ts
+```
+
+Or a whole directory
+
+```bash
+saumon build -r ./src
+```
+
 ### Files 
 
-The preprocessor will only transform files with `.macro.ts`, `.macro.js`, `.macro.tsx`, `.macro.jsx` extensions
+The preprocessor will only transform files with `.macro.*` extensions
 
 ### Definition
 
