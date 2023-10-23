@@ -20,7 +20,7 @@ function $random$(): number {
   return `${Math.random()}` as any
 }
 
-const x = 0.08816049746316335 * 100
+const x = 0.22854434089638742 * 100
 
 function $commented$() {
   return `log(name: string): this {
