@@ -8,6 +8,12 @@ npm i @hazae41/saumon
 
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
 
+## Summary
+- [Goals](#goals)
+- [Example](#example)
+- [Usage](#usage)
+- [Security](#security)
+
 ## Goals
 - Ultra simple and minimalist
 - Works on any runtime (Node, Deno, Bun, browser)
@@ -415,3 +421,13 @@ import { $log$, X } from "./log.ts"
 
 $log$(123, new X())
 ```
+
+## Security
+
+Macro files are transformed ahead-of-time by the developer.
+
+This means the output code is fully available in the Git, and won't interfere with code analysis tools.
+
+The macro code SHOULD only be transformed when needed (e.g. when modified, when the fetched data is stale), and its output SHOULD be verified by the developer.
+
+The developer SHOULD also provide the input macro file in the Git, so its output can be reproducible by people and automated tools.
