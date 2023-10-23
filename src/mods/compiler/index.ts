@@ -1,7 +1,7 @@
+import ts from "@rollup/plugin-typescript";
 import fs from "fs";
-import { findSync } from "libs/walk/walk.js";
 import path from "path";
-import ts from "typescript";
+import { rollup } from "rollup";
 
 export async function compile(arg: string) {
   const extension = path.extname(arg).slice(1)
@@ -250,22 +250,16 @@ export async function compile(arg: string) {
 
         fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
-        const { emitSkipped } = ts.createProgram([
-          `${dirname}/.${identifier}.saumon.${extension}`
-        ], {
-          module: ts.ModuleKind.ESNext,
-          outDir: `${dirname}/.${identifier}.saumon/`
-        }).emit()
+        const [chunk] = await rollup({
+          input: `${dirname}/.${identifier}.saumon.${extension}`,
+          plugins: [(ts as any)()]
+        }).then(x => x.write({
+          dir: `${dirname}/.${identifier}.saumon/`,
+        })).then(x => x.output)
 
-        if (emitSkipped)
-          throw new Error(`Transpilation failed`)
+        const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
 
-        const importable = findSync(`${dirname}/.${identifier}.saumon`, `.${identifier}.saumon.js`)
-
-        if (importable == null)
-          throw new Error(`Could not find file`)
-
-        const { output } = await import(importable)
+        const { output } = await import(entry)
 
         let awaited = await Promise.resolve(output)
 
