@@ -23,8 +23,8 @@ export async function compile(arg: string) {
 
   const lines = input.split("\n")
 
-  fs.rmSync(`${dirname}/.macros`, { recursive: true, force: true })
-  fs.mkdirSync(`${dirname}/.macros`)
+  fs.rmSync(`${dirname}/.saumon`, { recursive: true, force: true })
+  fs.mkdirSync(`${dirname}/.saumon`)
 
   for (let i = 0; i < lines.length; i++) {
     /**
@@ -68,7 +68,7 @@ export async function compile(arg: string) {
       continue
     }
 
-    const match = lines[i].match(/(\$[a-zA-Z0-9]+\$)\([^\)]*\)/)
+    const match = lines[i].match(/(\$.+\$)(<.+>)?\([^\)]*\)/)
 
     /**
      * Skip if no macro in this line
@@ -144,13 +144,13 @@ export async function compile(arg: string) {
         `${dirname}/${identifier}.eval.ts`
       ], {
         module: ts.ModuleKind.ESNext,
-        outDir: `${dirname}/.macros/`
+        outDir: `${dirname}/.saumon/`
       }).emit()
 
       if (emitSkipped)
         throw new Error(`Transpilation failed`)
 
-      const { output } = await import(`${dirname}/.macros/${identifier}.eval.js`)
+      const { output } = await import(`${dirname}/.saumon/${identifier}.eval.js`)
 
       let awaited = await Promise.resolve(output)
 
@@ -180,5 +180,5 @@ export async function compile(arg: string) {
   const output = lines.join("\n")
 
   fs.writeFileSync(`${dirname}/${basename}.ts`, output, "utf8")
-  fs.rmSync(`${dirname}/.macros`, { recursive: true, force: true })
+  fs.rmSync(`${dirname}/.saumon`, { recursive: true, force: true })
 }

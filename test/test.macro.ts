@@ -46,11 +46,19 @@ function $debug$(x: string) {
 
 $debug$("test")
 
-async function $fetch$(url: string) {
-  const response = await fetch(url)
-  const object = await response.json()
-
-  return `${JSON.stringify(object)}`
+function $parse$<T>(x: string): T {
+  return JSON.stringify(JSON.parse(x)) as any
 }
 
-console.log($fetch$("https://dummyjson.com/products/1"))
+console.log($parse$<{ id: number }>(`{"id":123}`))
+
+function $fetch$<T>(url: string): T {
+  return (async () => {
+    const response = await fetch(url)
+    const object = await response.json()
+
+    return JSON.stringify(object)
+  })() as any
+}
+
+console.log($fetch$<{ id: number }>("https://dummyjson.com/products/1"))

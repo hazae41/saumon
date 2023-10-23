@@ -78,7 +78,7 @@ $log$("hello world")
 
 ### Imported macro
 
-#### You can export a macro (from any file) and import it in macro file
+#### You can export a macro (from any file) and import it in a macro file
 
 `log.ts`
 
@@ -126,7 +126,7 @@ import { $log$ } from "./log.ts"
 $log$("hello from the main file")
 ```
 
-### In-comment macro
+### Comment blocks
 
 #### You can call a macro everywhere with comment blocks
 
@@ -176,27 +176,51 @@ const enabled = true
  */
 ```
 
+### Generic
+
+### You can use generic macro functions
+
+`parse.macro.ts`
+
+```ts
+function $parse$<T>(x: string): T {
+  return JSON.stringify(JSON.parse(x)) as any
+}
+
+export const data = $parse$<{ id: number }>(`{"id":123}`)
+```
+
+`parse.ts`
+
+```ts
+export const data = {"id":123}
+```
+
 ### Async
 
 #### You can define and run async macros
 
+Just return a Promise and the preprocessor will wait for it
+
 `fetch.macro.ts`
 
 ```ts
-async function $fetch$(url: string) {
-  const response = await fetch(url)
-  const object = await response.json()
+function $fetch$<T>(url: string): T {
+  return (async () => {
+    const response = await fetch(url)
+    const object = await response.json()
 
-  return `${JSON.stringify(object)}`
+    return JSON.stringify(object)
+  })() as any
 }
 
-console.log($fetch$("https://dummyjson.com/products/1"))
+export const data = $fetch$<{ id: number }>("https://dummyjson.com/products/1")
 ```
 
 `fetch.ts`
 
 ```ts
-console.log({ "id": 1 })
+export const data = { "id": 1 }
 ```
 
 #### You can await macroed code
@@ -218,7 +242,7 @@ Macro functions MUST NOT be arrow functions or anonymous functions
 ❌
 
 ```ts
-const $log$ = function () {
+export const $log$ = function () {
   return `console.log("hey")`
 }
 ```
@@ -226,7 +250,7 @@ const $log$ = function () {
 ❌
 
 ```ts
-const $log$ = () => {
+export const $log$ = () => {
   return `console.log("hey")`
 }
 ```
@@ -234,14 +258,14 @@ const $log$ = () => {
 ✅
 
 ```ts
-function $log$() {
+export function $log$() {
   return `console.log("hey")`
 }
 ```
 
-#### Top-level
+#### Top-level definition when calling in-file macros
 
-Macro functions SHOULD be defined at top-level to avoid name conflicts
+In-file macro functions SHOULD be defined at top-level to avoid name conflicts
 
 This is because the parser can't do code analysis to find which macro you want to use
 
@@ -283,13 +307,13 @@ function g() {
 }
 ```
 
-#### Scoped variables
+#### Scoped variables when calling in-file macros
 
-All variables MUST be primitive or unscoped
+When calling a macro in-file, variables MUST be primitive or unscoped
 
 This is because macro definitions and calls are ran isolated from their surrounding code, so they can't access variables defined outside them, but they can still access global variables and imports, so it's not a big deal
 
-❌
+❌ Calling an in-file macro whose variables are scoped
 
 ```ts
 const debugging = true
@@ -299,9 +323,11 @@ function $debug$(x: string) {
     return
   return `console.debug("${x}")`
 }
+
+$debug$("hey")
 ```
 
-✅
+✅ Calling an in-file macro whose variables are imported
 
 ```ts
 import { debugging } from "./debugging.ts"
@@ -311,11 +337,35 @@ function $debug$(x: string) {
     return
   return `console.debug("${x}")`
 }
+
+$debug$("hey")
 ```
 
-Passed parameters MUST also be primitive or unscoped (and their type too)
+✅ Calling an imported macro
 
-❌
+`debug.ts`
+
+```ts
+const debugging = true
+
+export function $debug$(x: string) {
+  if (!debugging)
+    return
+  return `console.debug("${x}")`
+}
+```
+
+`main.macro.ts`
+
+```ts
+import { $debug$ } from "./debug.ts"
+
+$debug$("hey")
+```
+
+Similarly, passed parameters MUST also be primitive or unscoped (and their type too)
+
+❌ Calling an in-file macro whose parameters depend on in-file definitions
 
 ```ts
 class X {}
@@ -327,7 +377,7 @@ function $log$(i: number, x: X) {
 $log$(123, new X())
 ```
 
-✅
+✅ Calling an in-file macro whose parameters depend on imported definitions
 
 ```ts
 import type { X } from "./x.ts"
@@ -338,4 +388,26 @@ function $log$(i: number, x: X) {
 }
 
 $log$(123, x)
+```
+
+✅ Calling an imported macro
+
+`log.ts`
+
+```ts
+export class X {}
+
+export function $log$(i: number, x: X) {
+  return `console.log(${i}, "${JSON.stringify(x)}")`
+}
+
+$log$(123, new X())
+```
+
+`main.macro.ts`
+
+```ts
+import { $log$, X } from "./log.ts"
+
+$log$(123, new X())
 ```
