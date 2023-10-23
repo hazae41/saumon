@@ -12,3 +12,10 @@ export function* walkSync(directory: string): Iterable<string> {
     }
   }
 }
+
+export function findSync(directory: string, name: string) {
+  for (const file of walkSync(directory)) {
+    if (path.basename(file) === name)
+      return file
+  }
+}

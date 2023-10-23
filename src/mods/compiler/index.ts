@@ -1,9 +1,10 @@
 import fs from "fs";
+import { findSync } from "libs/walk/walk.js";
 import path from "path";
 import ts from "typescript";
 
 export async function compile(arg: string) {
-  const extension = arg.split(".").at(-1)
+  const extension = path.extname(arg)
 
   if (!extension)
     throw new Error(`Not a macro file`)
@@ -177,7 +178,12 @@ export async function compile(arg: string) {
       if (emitSkipped)
         throw new Error(`Transpilation failed`)
 
-      const { output } = await import(`${dirname}/.${identifier}.saumon/.${identifier}.saumon.js`)
+      const importable = findSync(`${dirname}/.${identifier}.saumon`, `.${identifier}.saumon.js`)
+
+      if (importable == null)
+        throw new Error(`Could not find file`)
+
+      const { output } = await import(importable)
 
       let awaited = await Promise.resolve(output)
 
