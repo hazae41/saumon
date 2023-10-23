@@ -23,9 +23,6 @@ export async function compile(arg: string) {
 
   const lines = input.split("\n")
 
-  if (!fs.existsSync(`${dirname}/.saumon`))
-    fs.mkdirSync(`${dirname}/.saumon`)
-
   for (let i = 0; i < lines.length; i++) {
     /**
      * Find where code starts
@@ -138,19 +135,19 @@ export async function compile(arg: string) {
         + "\n\n"
         + `export const output = ${input}`
 
-      fs.writeFileSync(`${dirname}/${identifier}.eval.ts`, code, "utf8")
+      fs.writeFileSync(`${dirname}/.${identifier}.saumon.ts`, code, "utf8")
 
       const { emitSkipped } = ts.createProgram([
-        `${dirname}/${identifier}.eval.ts`
+        `${dirname}/.${identifier}.saumon.ts`
       ], {
         module: ts.ModuleKind.ESNext,
-        outDir: `${dirname}/.saumon/${identifier}/`
+        outDir: `${dirname}/.${identifier}.saumon/`
       }).emit()
 
       if (emitSkipped)
         throw new Error(`Transpilation failed`)
 
-      const { output } = await import(`${dirname}/.saumon/${identifier}/${identifier}.eval.js`)
+      const { output } = await import(`${dirname}/.${identifier}.saumon/.${identifier}.saumon.js`)
 
       let awaited = await Promise.resolve(output)
 
@@ -173,12 +170,12 @@ export async function compile(arg: string) {
       /**
        * Clean
        */
-      fs.rmSync(`${dirname}/${identifier}.eval.ts`)
+      fs.rmSync(`${dirname}/.${identifier}.saumon.ts`)
+      fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
     }
   }
 
   const output = lines.join("\n")
 
   fs.writeFileSync(`${dirname}/${basename}.ts`, output, "utf8")
-  fs.rmSync(`${dirname}/.saumon`, { recursive: true, force: true })
 }
