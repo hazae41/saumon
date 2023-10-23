@@ -233,11 +233,11 @@ function $f$(): Promise<number> {
 await $f$()
 ```
 
-### Constraints
+### Constraints on in-file macro calls
 
 Those constraints only apply when calling in-file macros, not when calling imported macros
 
-#### Regular functions when calling in-file macros
+#### Regular functions
 
 When calling an in-file macro, it MUST be defined as a regular function
 
@@ -265,7 +265,7 @@ export function $log$() {
 }
 ```
 
-#### Top-level definition when calling in-file macros
+#### Top-level definition
 
 When calling an in-file macro, it SHOULD be defined at top-level to avoid name conflicts
 
@@ -309,7 +309,7 @@ function g() {
 }
 ```
 
-#### Local variables when calling in-file macros
+#### Local variables
 
 When calling a macro in-file, variables MUST be primitive, global, or imported
 
