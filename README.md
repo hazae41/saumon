@@ -178,7 +178,7 @@ const enabled = true
 
 ### Generic
 
-### You can use generic macro functions
+#### You can use generic macro functions
 
 `parse.macro.ts`
 
