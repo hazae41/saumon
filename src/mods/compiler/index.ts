@@ -5,6 +5,9 @@ import ts from "typescript";
 export async function compile(arg: string) {
   const extension = arg.split(".").at(-1)
 
+  if (!extension)
+    throw new Error(`Not a macro file`)
+
   if (!arg.endsWith(`.macro.${extension}`))
     throw new Error(`Not a macro file`)
 
@@ -135,10 +138,10 @@ export async function compile(arg: string) {
         + "\n\n"
         + `export const output = ${input}`
 
-      fs.writeFileSync(`${dirname}/.${identifier}.saumon.ts`, code, "utf8")
+      fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
       const { emitSkipped } = ts.createProgram([
-        `${dirname}/.${identifier}.saumon.ts`
+        `${dirname}/.${identifier}.saumon.${extension}`
       ], {
         module: ts.ModuleKind.ESNext,
         outDir: `${dirname}/.${identifier}.saumon/`
@@ -170,12 +173,12 @@ export async function compile(arg: string) {
       /**
        * Clean
        */
-      fs.rmSync(`${dirname}/.${identifier}.saumon.ts`)
+      fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
       fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
     }
   }
 
   const output = lines.join("\n")
 
-  fs.writeFileSync(`${dirname}/${basename}.ts`, output, "utf8")
+  fs.writeFileSync(`${dirname}/${basename}.${extension}`, output, "utf8")
 }
