@@ -26,8 +26,19 @@ export async function compile(arg: string) {
 
   const lines = input.split("\n")
 
+  let templated = false
+
   for (let i = 0; i < lines.length; i++) {
     if (lines[i] == null)
+      continue
+
+    for (let k = 0; k < lines[i].length; k++) {
+      if (lines[i][k] === "`" && lines[i][k - 1] !== "\\")
+        templated = !templated
+      continue
+    }
+
+    if (templated)
       continue
 
     /**
@@ -85,10 +96,21 @@ export async function compile(arg: string) {
      * It's a macro definition
      */
     if (lines[i].includes(`function ${name}`)) {
-      /**
-       * Let's find the end bracket
-       */
+      let templated = false
+
       for (let j = i; j < lines.length; j++) {
+        if (lines[j] == null)
+          continue
+
+        for (let k = 0; k < lines[j].length; k++) {
+          if (lines[j][k] === "`" && lines[j][k - 1] !== "\\")
+            templated = !templated
+          continue
+        }
+
+        if (templated)
+          continue
+
         if (lines[j] === "}") {
           /**
            * Save the definition
@@ -97,6 +119,8 @@ export async function compile(arg: string) {
           definitionByName.set(name, definition)
           break
         }
+
+        continue
       }
 
       continue
@@ -179,6 +203,8 @@ export async function compile(arg: string) {
       fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
       fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
     }
+
+    continue
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -192,9 +218,22 @@ export async function compile(arg: string) {
     if (lines[i].startsWith("export"))
       continue
 
+    let templated = false
+
     for (let j = i; j < lines.length; j++) {
       if (lines[j] == null)
         continue
+
+      for (let k = 0; k < lines[j].length; k++) {
+        if (lines[j][k] === "`" && lines[j][k - 1] !== "\\")
+          templated = !templated
+        continue
+      }
+
+      if (templated) {
+        delete lines[j]
+        continue
+      }
 
       if (lines[j] === "}") {
         delete lines[j]
@@ -203,11 +242,13 @@ export async function compile(arg: string) {
           delete lines[j + 1]
 
         break
-      } else {
-        delete lines[j]
-        continue
       }
+
+      delete lines[j]
+      continue
     }
+
+    continue
   }
 
   const output = lines.filter(it => it != null).join("\n")
