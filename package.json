@@ -14,7 +14,8 @@
   "files": [
     "./dist/esm",
     "./dist/cjs",
-    "./dist/types"
+    "./dist/types",
+    "./dist/cli"
   ],
   "scripts": {
     "build": "rimraf dist && rollup -c",
