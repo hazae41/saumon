@@ -1,4 +1,4 @@
-# Saumon 🍣
+# Saumon 🐟
 
 Ultra simple macro system for TypeScript
 
