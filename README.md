@@ -235,9 +235,11 @@ await $f$()
 
 ### Constraints
 
-#### Regular functions
+Those constraints only apply when calling in-file macros, not when calling imported macros
 
-Macro functions MUST NOT be arrow functions or anonymous functions
+#### Regular functions when calling in-file macros
+
+When calling an in-file macro, it MUST be defined as a regular function
 
 ❌
 
@@ -265,7 +267,7 @@ export function $log$() {
 
 #### Top-level definition when calling in-file macros
 
-In-file macro functions SHOULD be defined at top-level to avoid name conflicts
+When calling an in-file macro, it SHOULD be defined at top-level to avoid name conflicts
 
 This is because the parser can't do code analysis to find which macro you want to use
 
@@ -307,13 +309,15 @@ function g() {
 }
 ```
 
-#### Scoped variables when calling in-file macros
+#### Local variables when calling in-file macros
 
-When calling a macro in-file, variables MUST be primitive or unscoped
+When calling a macro in-file, variables MUST be primitive, global, or imported
 
-This is because macro definitions and calls are ran isolated from their surrounding code, so they can't access variables defined outside them, but they can still access global variables and imports, so it's not a big deal
+This is because macro definitions and calls are ran isolated from their surrounding code
 
-❌ Calling an in-file macro whose variables are scoped
+They can still access global variables and imports
+
+❌ Calling an in-file macro that uses local variables
 
 ```ts
 const debugging = true
@@ -327,7 +331,7 @@ function $debug$(x: string) {
 $debug$("hey")
 ```
 
-✅ Calling an in-file macro whose variables are imported
+✅ Calling an in-file macro that uses global or imported variables
 
 ```ts
 import { debugging } from "./debugging.ts"
@@ -363,9 +367,9 @@ import { $debug$ } from "./debug.ts"
 $debug$("hey")
 ```
 
-Similarly, passed parameters MUST also be primitive or unscoped (and their type too)
+Similarly, passed parameters MUST also be primitive, global, or imported (and their type too)
 
-❌ Calling an in-file macro whose parameters depend on in-file definitions
+❌ Calling an in-file macro whose parameters are local
 
 ```ts
 class X {}
@@ -377,7 +381,7 @@ function $log$(i: number, x: X) {
 $log$(123, new X())
 ```
 
-✅ Calling an in-file macro whose parameters depend on imported definitions
+✅ Calling an in-file macro whose parameters are imported
 
 ```ts
 import type { X } from "./x.ts"
