@@ -16,7 +16,7 @@ if (command === "build") {
     paths.push(arg)
   }
 
-  function recursive(path: string) {
+  async function recursive(path: string) {
     for (const file of walkSync(path)) {
       const extension = file.split(".").at(-1)
 

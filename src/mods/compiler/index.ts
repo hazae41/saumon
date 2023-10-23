@@ -15,7 +15,7 @@ export async function compile(arg: string) {
   const input = fs.readFileSync(filename, "utf8")
 
   const metadata: {
-    lastImportLine?: number
+    firstCodeLine?: number
   } = {}
 
   const outputByInput = new Map<string, string>()
@@ -23,14 +23,15 @@ export async function compile(arg: string) {
 
   const lines = input.split("\n")
 
-  fs.mkdirSync(`${dirname}/.saumon`)
+  if (!fs.existsSync(`${dirname}/.saumon`))
+    fs.mkdirSync(`${dirname}/.saumon`)
 
   for (let i = 0; i < lines.length; i++) {
     /**
      * Find where code starts
      */
     if (lines[i].startsWith("import")) {
-      metadata.lastImportLine = i
+      metadata.firstCodeLine = i + 1
       continue
     }
 
@@ -119,8 +120,8 @@ export async function compile(arg: string) {
      */
     const identifier = crypto.randomUUID().split("-")[0]
 
-    const { lastImportLine = 0 } = metadata
-    const imports = lines.slice(0, lastImportLine + 1).join("\n")
+    const { firstCodeLine = 0 } = metadata
+    const imports = lines.slice(0, firstCodeLine).join("\n")
 
     const definition = definitionByName.get(name) ?? ""
 
@@ -143,13 +144,13 @@ export async function compile(arg: string) {
         `${dirname}/${identifier}.eval.ts`
       ], {
         module: ts.ModuleKind.ESNext,
-        outDir: `${dirname}/.saumon/`
+        outDir: `${dirname}/.saumon/${identifier}/`
       }).emit()
 
       if (emitSkipped)
         throw new Error(`Transpilation failed`)
 
-      const { output } = await import(`${dirname}/.saumon/${identifier}.eval.js`)
+      const { output } = await import(`${dirname}/.saumon/${identifier}/${identifier}.eval.js`)
 
       let awaited = await Promise.resolve(output)
 
