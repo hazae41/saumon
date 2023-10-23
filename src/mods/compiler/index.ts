@@ -104,7 +104,7 @@ export async function compile(arg: string) {
         continue
       }
 
-      const match = lines[i].match(/(\$.+\$)(<.+>)?\([^\)]*\)/)
+      const match = lines[i].match(/([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\([^\)]*\)/)
 
       /**
        * Skip if no macro in this line
@@ -112,7 +112,71 @@ export async function compile(arg: string) {
       if (match == null)
         continue
 
-      const [input, name] = match
+      const name = match[2]
+      const index = match.index!
+
+      let input = ""
+      let depth = 0
+
+      for (let j = index; j < lines[i].length; j++) {
+
+        if (lines[i][j] === "'" && lines[i][j - 1] !== "\\") {
+          input += lines[i][j]
+
+          for (j++; j < lines[i].length; j++) {
+            input += lines[i][j]
+
+            if (lines[i][j] === "'" && lines[i][j - 1] !== "\\")
+              break
+            continue
+          }
+
+          continue
+        }
+
+        if (lines[i][j] === `"` && lines[i][j - 1] !== "\\") {
+          input += lines[i][j]
+
+          for (j++; j < lines[i].length; j++) {
+            input += lines[i][j]
+
+            if (lines[i][j] === `"` && lines[i][j - 1] !== "\\")
+              break
+            continue
+          }
+
+          continue
+        }
+
+        if (lines[i][j] === "`" && lines[i][j - 1] !== "\\") {
+          input += lines[i][j]
+
+          for (j++; j < lines[i].length; j++) {
+            input += lines[i][j]
+
+            if (lines[i][j] === "`" && lines[i][j - 1] !== "\\")
+              break
+            continue
+          }
+
+          continue
+        }
+
+        input += lines[i][j]
+
+        if (lines[i][j] === "(")
+          depth++
+
+        if (lines[i][j] === ")") {
+          depth--
+
+          if (depth === 0)
+            break
+          continue
+        }
+
+        continue
+      }
 
       /**
        * It's a macro definition
