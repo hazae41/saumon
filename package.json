@@ -54,5 +54,8 @@
   ],
   "dependencies": {
     "typescript": "^5.2.2"
+  },
+  "bin": {
+    "saumon": "./dist/cli/index.cli.mjs"
   }
 }

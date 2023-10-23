@@ -35,6 +35,18 @@ export const config = [
     plugins: [externals(), ts(), dts()]
   },
   {
+    input: "./src/index.cli.ts",
+    output: [{
+      dir: "./dist/cli",
+      format: "esm",
+      exports: "named",
+      preserveModules: true,
+      sourcemap: true,
+      entryFileNames: "[name].mjs"
+    }],
+    plugins: [externals(), ts()],
+  },
+  {
     input: "./src/index.test.ts",
     output: [{
       dir: "./dist/test",
@@ -45,7 +57,7 @@ export const config = [
       entryFileNames: "[name].mjs"
     }],
     plugins: [externals({ devDeps: true }), ts()],
-  },
+  }
 ]
 
 export default config
