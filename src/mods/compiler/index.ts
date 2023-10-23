@@ -23,7 +23,6 @@ export async function compile(arg: string) {
 
   const lines = input.split("\n")
 
-  fs.rmSync(`${dirname}/.saumon`, { recursive: true, force: true })
   fs.mkdirSync(`${dirname}/.saumon`)
 
   for (let i = 0; i < lines.length; i++) {
