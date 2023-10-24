@@ -24,30 +24,189 @@ export async function compile(arg: string) {
 
   const lines = input.split("\n")
 
+  interface Slot {
+    x: number
+  }
+
   /**
-   * Find where code starts
+   * Yield each char in a lines array
+   * @param lines 
+   * @param i line
+   * @param j char
+   */
+  function* allChars(lines: string[], i: Slot, j: Slot) {
+    /**
+     * Continue on the current line
+     */
+    for (; j.x < lines[i.x].length; j.x++)
+      yield lines[i.x][j.x]
+
+    /**
+     * Newline
+     */
+    yield "\n"
+
+    /**
+     * Go to next line
+     */
+    i.x++
+
+    /**
+     * Continue for all next lines
+     */
+    for (; i.x < lines.length; i.x++) {
+      if (lines[i.x] == null)
+        continue
+      for (j.x = 0; j.x < lines[i.x].length; j.x++)
+        yield lines[i.x][j.x]
+    }
+  }
+
+  function isQuoted(lines: string[], i: Slot, j: Slot, quote: string) {
+    return lines[i.x][j.x] === quote && lines[i.x][j.x - 1] !== "\\"
+  }
+
+  /**
+   * Yield all quoted chars if the current char is quoted
+   * @param lines 
+   * @param i 
+   * @param j 
+   * @param quote 
+   * @returns 
+   */
+  function* allQuotedChars(lines: string[], i: Slot, j: Slot, quote: string) {
+    if (!isQuoted(lines, i, j, quote))
+      return
+
+    yield lines[i.x][j.x]
+    j.x++
+
+    /**
+     * Yield until end
+     */
+    for (const char of allChars(lines, i, j)) {
+      if (lines[i.x][j.x] === quote && lines[i.x][j.x - 1] !== "\\") {
+        yield lines[i.x][j.x]
+        j.x++
+        break
+      }
+
+      yield char
+    }
+  }
+
+  function* allAnyQuotedChars(lines: string[], i: Slot, j: Slot) {
+    for (const quoted of allQuotedChars(lines, i, j, "`"))
+      yield quoted
+    for (const quoted of allQuotedChars(lines, i, j, "'"))
+      yield quoted
+    for (const quoted of allQuotedChars(lines, i, j, '"'))
+      yield quoted
+  }
+
+  function* allUnquotedChars(lines: string[], i: Slot, j: Slot) {
+    for (const char of allChars(lines, i, j)) {
+      const quoteds = allAnyQuotedChars(lines, i, j)
+
+      let next = quoteds.next()
+
+      if (next.done) {
+        yield char
+        continue
+      }
+
+      for (; !next.done; next = quoteds.next())
+        continue
+      continue
+    }
+  }
+
+  function* allCharsWithQuote(lines: string[], i: Slot, j: Slot) {
+    for (const char of allChars(lines, i, j)) {
+      const quoteds = allAnyQuotedChars(lines, i, j)
+
+      let next = quoteds.next()
+
+      if (next.done) {
+        yield [char, false] as const
+        continue
+      }
+
+      for (; !next.done; next = quoteds.next())
+        yield [next.value, true] as const
+      continue
+    }
+  }
+
+  /**
+   * First preprocessing to detect imports and uncomment
    */
   {
-    let templated = false
-
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i] == null)
+    for (const i = { x: 0 }; i.x < lines.length; i.x++) {
+      if (lines[i.x] == null)
         continue
 
-      for (let k = 0; k < lines[i].length; k++) {
-        if (lines[i][k] === "`" && lines[i][k - 1] !== "\\")
-          templated = !templated
-        continue
+      for (const j = { x: 0 }; j.x < lines[i.x].length; j.x++) {
+        /**
+         * Skip to next char until we're not in a quote
+         */
+        for (const _ of allAnyQuotedChars(lines, i, j))
+          continue
+
+        /**
+         * Skip to next char if we're no longer at the start of the line
+         */
+        if (j.x !== 0)
+          continue
+
+        /**
+         * Detect imports
+         */
+        if (lines[i.x].startsWith("import")) {
+          imports.push(lines[i.x])
+          break
+        }
+
+        /**
+         * Detect block comment
+         */
+        if (lines[i.x].trim().startsWith("* @macro")) {
+          /**
+           * Assume previous line is "/**" and delete it
+           */
+          delete lines[i.x - 1]
+
+          /**
+           * Delete current line
+           */
+          delete lines[i.x]
+
+          /**
+           * Uncomment next lines until end
+           */
+          for (i.x++; i.x < lines.length; i.x++) {
+            if (lines[i.x] == null)
+              continue
+            if (lines[i.x].trim().startsWith("*/"))
+              break
+            lines[i.x] = lines[i.x].replace("* ", "")
+          }
+
+          /**
+           * Delete last line
+           */
+          delete lines[i.x]
+
+          /**
+           * Go to next char
+           */
+          break
+        }
       }
 
-      if (templated)
-        continue
-
-      if (lines[i].startsWith("import")) {
-        imports.push(lines[i])
-        continue
-      }
-
+      /**
+       * Go to the next line
+       */
       continue
     }
   }
@@ -56,235 +215,187 @@ export async function compile(arg: string) {
    * Apply macros
    */
   {
-    let templated = false
-
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i] == null)
+    for (const i = { x: 0 }; i.x < lines.length; i.x++) {
+      if (lines[i.x] == null)
         continue
 
-      for (let k = 0; k < lines[i].length; k++) {
-        if (lines[i][k] === "`" && lines[i][k - 1] !== "\\")
-          templated = !templated
-        continue
-      }
+      const matches = lines[i.x].matchAll(/([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\(/)
 
-      if (templated)
-        continue
+      for (const match of matches) {
+        const line = i.x
+        const name = match[2]
 
-      /**
-       * Macro block comment
-       */
-      if (lines[i].trim().startsWith("* @macro")) {
-        /**
-         * Delete start
-         */
-        lines[i - 1] = lines[i - 1].replace("/**", "")
+        for (const j = { x: 0 }; j.x < lines[i.x].length; j.x++) {
+          /**
+           * Skip to next char until we're not in a quote
+           */
+          for (const _ of allAnyQuotedChars(lines, i, j))
+            continue
 
-        /**
-         * Delete macro attribute
-         */
-        delete lines[i]
-
-        let j = i + 1;
-
-        /**
-         * Delete others
-         */
-        for (; j < lines.length; j++) {
-          if (lines[j].trim().startsWith("*/"))
+          /**
+           * Stop if we're no longer on the line of the match
+           */
+          if (i.x !== line)
             break
-          lines[j] = lines[j].replace("* ", "")
-        }
 
-        /**
-         * Delete end
-         */
-        lines[j] = lines[j].replace("*/", "")
+          /**
+           * Skip to next char if this is not the match
+           */
+          if (j.x !== match.index)
+            continue
 
-        continue
-      }
+          /**
+           * This is the match
+           */
+          let input = ""
 
-      const match = lines[i].match(/([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\([^\)]*\)/)
+          /**
+           * Fill the input with the current char
+           */
+          input += lines[i.x][j.x]
 
-      /**
-       * Skip if no macro in this line
-       */
-      if (match == null)
-        continue
+          /**
+           * Go to the next char
+           */
+          j.x++
 
-      const name = match[2]
-      const index = match.index!
+          /**
+           * Initial parenthesis depth
+           */
+          let depth = 0
 
-      let input = ""
-      let depth = 0
+          /**
+           * Fill the input until a final closing parenthesis is found
+           */
+          for (const [char, quoted] of allCharsWithQuote(lines, i, j)) {
+            input += char
 
-      for (let j = index; j < lines[i].length; j++) {
+            if (quoted)
+              continue
 
-        if (lines[i][j] === "'" && lines[i][j - 1] !== "\\") {
-          input += lines[i][j]
+            if (char === "(") {
+              depth++
+              continue
+            }
 
-          for (j++; j < lines[i].length; j++) {
-            input += lines[i][j]
+            if (char === ")") {
+              depth--
 
-            if (lines[i][j] === "'" && lines[i][j - 1] !== "\\")
-              break
+              if (depth === 0)
+                break
+              continue
+            }
+
             continue
           }
 
-          continue
-        }
+          // /**
+          //  * It's a macro definition
+          //  */
+          // if (input.includes(`function ${name}`)) {
+          //   let templated = false
 
-        if (lines[i][j] === `"` && lines[i][j - 1] !== "\\") {
-          input += lines[i][j]
+          //   for (const j = { x: i.x }; j.x < lines.length; j.x++) {
+          //     if (lines[j.x] == null)
+          //       continue
 
-          for (j++; j < lines[i].length; j++) {
-            input += lines[i][j]
+          //     for (let k = 0; k < lines[j.x].length; k++) {
+          //       if (lines[j.x][k] === "`" && lines[j.x][k - 1] !== "\\")
+          //         templated = !templated
+          //       continue
+          //     }
 
-            if (lines[i][j] === `"` && lines[i][j - 1] !== "\\")
-              break
-            continue
-          }
+          //     if (templated)
+          //       continue
 
-          continue
-        }
+          //     if (lines[j.x] === "}") {
+          //       /**
+          //        * Save the definition
+          //        */
+          //       const definition = lines.slice(i.x, j.x + 1).join("\n")
+          //       definitionByName.set(name, definition)
+          //       break
+          //     }
 
-        if (lines[i][j] === "`" && lines[i][j - 1] !== "\\") {
-          input += lines[i][j]
+          //     continue
+          //   }
 
-          for (j++; j < lines[i].length; j++) {
-            input += lines[i][j]
+          //   continue
+          // }
 
-            if (lines[i][j] === "`" && lines[i][j - 1] !== "\\")
-              break
-            continue
-          }
+          /**
+           * Check if cached
+           */
+          const cached = outputByInput.get(input)
 
-          continue
-        }
-
-        input += lines[i][j]
-
-        if (lines[i][j] === "(")
-          depth++
-
-        if (lines[i][j] === ")") {
-          depth--
-
-          if (depth === 0)
+          if (cached != null) {
+            lines[i.x] = lines[i.x].replaceAll(input, cached)
             break
-          continue
-        }
-
-        continue
-      }
-
-      /**
-       * It's a macro definition
-       */
-      if (lines[i].includes(`function ${name}`)) {
-        let templated = false
-
-        for (let j = i; j < lines.length; j++) {
-          if (lines[j] == null)
-            continue
-
-          for (let k = 0; k < lines[j].length; k++) {
-            if (lines[j][k] === "`" && lines[j][k - 1] !== "\\")
-              templated = !templated
-            continue
           }
 
-          if (templated)
-            continue
+          /**
+           * Per-call identifier
+           */
+          const identifier = crypto.randomUUID().split("-")[0]
 
-          if (lines[j] === "}") {
+          const definition = definitionByName.get(name) ?? ""
+
+          /**
+           * Check if CommonJS
+           */
+          if (typeof require !== "undefined") {
+            throw new Error(`CommonJS not supported yet`)
+          } else {
+            const code = ``
+              + imports.join("\n")
+              + "\n\n"
+              + definition
+              + "\n\n"
+              + `export const output = ${input}`
+
+            fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
+
+            const [chunk] = await rollup({
+              input: `${dirname}/.${identifier}.saumon.${extension}`,
+              plugins: [(ts as any)()],
+              external: ["tslib"]
+            }).then(x => x.write({
+              dir: `${dirname}/.${identifier}.saumon/`,
+            })).then(x => x.output)
+
+            const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
+
+            const { output } = await import(entry)
+
+            let awaited = await Promise.resolve(output)
+
+            if (typeof awaited === "undefined")
+              awaited = ""
+
+            if (typeof awaited !== "string")
+              throw new Error(`Evaluation failed`)
+
             /**
-             * Save the definition
+             * Fill the cache
              */
-            const definition = lines.slice(i, j + 1).join("\n")
-            definitionByName.set(name, definition)
-            break
+            outputByInput.set(input, awaited)
+
+            /**
+             * Apply
+             */
+            lines[i.x] = lines[i.x].replaceAll(input, awaited)
+
+            /**
+             * Clean
+             */
+            fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
+            fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
           }
 
-          continue
+          break
         }
 
         continue
-      }
-
-      /**
-       * It's a macro call
-       */
-
-      /**
-       * Check if cached
-       */
-      {
-        const output = outputByInput.get(input)
-
-        if (output != null) {
-          lines[i] = lines[i].replaceAll(input, output)
-          continue
-        }
-      }
-
-      /**
-       * Per-call identifier
-       */
-      const identifier = crypto.randomUUID().split("-")[0]
-
-      const definition = definitionByName.get(name) ?? ""
-
-      /**
-       * Check if CommonJS
-       */
-      if (typeof require !== "undefined") {
-        throw new Error(`CommonJS not supported yet`)
-      } else {
-        const code = ``
-          + imports.join("\n")
-          + "\n\n"
-          + definition
-          + "\n\n"
-          + `export const output = ${input}`
-
-        fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
-
-        const [chunk] = await rollup({
-          input: `${dirname}/.${identifier}.saumon.${extension}`,
-          plugins: [(ts as any)()],
-          external: ["tslib"]
-        }).then(x => x.write({
-          dir: `${dirname}/.${identifier}.saumon/`,
-        })).then(x => x.output)
-
-        const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
-
-        const { output } = await import(entry)
-
-        let awaited = await Promise.resolve(output)
-
-        if (typeof awaited === "undefined")
-          awaited = ""
-
-        if (typeof awaited !== "string")
-          throw new Error(`Evaluation failed`)
-
-        /**
-         * Fill the cache
-         */
-        outputByInput.set(input, awaited)
-
-        /**
-         * Apply
-         */
-        lines[i] = lines[i].replaceAll(input, awaited)
-
-        /**
-         * Clean
-         */
-        fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
-        fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
       }
 
       continue
