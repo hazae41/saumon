@@ -59,6 +59,7 @@ export async function compile(arg: string) {
         continue
       for (j.x = 0; j.x < lines[i.x].length; j.x++)
         yield lines[i.x][j.x]
+      yield "\n"
     }
   }
 
@@ -104,23 +105,6 @@ export async function compile(arg: string) {
       yield quoted
   }
 
-  function* allUnquotedChars(lines: string[], i: Slot, j: Slot) {
-    for (const char of allChars(lines, i, j)) {
-      const quoteds = allAnyQuotedChars(lines, i, j)
-
-      let next = quoteds.next()
-
-      if (next.done) {
-        yield char
-        continue
-      }
-
-      for (; !next.done; next = quoteds.next())
-        continue
-      continue
-    }
-  }
-
   function* allCharsWithQuote(lines: string[], i: Slot, j: Slot) {
     for (const char of allChars(lines, i, j)) {
       const quoteds = allAnyQuotedChars(lines, i, j)
@@ -134,6 +118,12 @@ export async function compile(arg: string) {
 
       for (; !next.done; next = quoteds.next())
         yield [next.value, true] as const
+
+      /**
+       * Go back
+       */
+      j.x--
+
       continue
     }
   }
@@ -219,10 +209,10 @@ export async function compile(arg: string) {
       if (lines[i.x] == null)
         continue
 
-      const matches = lines[i.x].matchAll(/([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\(/)
+      const matches = lines[i.x].matchAll(/([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\(/g)
 
       for (const match of matches) {
-        const line = i.x
+        const i0 = i.x
         const name = match[2]
 
         for (const j = { x: 0 }; j.x < lines[i.x].length; j.x++) {
@@ -235,7 +225,7 @@ export async function compile(arg: string) {
           /**
            * Stop if we're no longer on the line of the match
            */
-          if (i.x !== line)
+          if (i.x !== i0)
             break
 
           /**
@@ -243,6 +233,7 @@ export async function compile(arg: string) {
            */
           if (j.x !== match.index)
             continue
+          const j0 = j.x
 
           /**
            * This is the match
@@ -289,6 +280,11 @@ export async function compile(arg: string) {
             continue
           }
 
+          const i1 = i.x
+          const j1 = j.x
+
+          console.log(input)
+
           // /**
           //  * It's a macro definition
           //  */
@@ -329,7 +325,7 @@ export async function compile(arg: string) {
           const cached = outputByInput.get(input)
 
           if (cached != null) {
-            lines[i.x] = lines[i.x].replaceAll(input, cached)
+            lines[i0] = lines[i0].replaceAll(input, cached)
             break
           }
 
@@ -383,13 +379,19 @@ export async function compile(arg: string) {
             /**
              * Apply
              */
-            lines[i.x] = lines[i.x].replaceAll(input, awaited)
+
+            lines[i0] = lines[i0].slice(0, j0) + awaited
+
+            for (let i = i0 + 1; i < i1; i++)
+              delete lines[i]
+
+            lines[i1] = lines[i1].slice(j1 + 1)
 
             /**
              * Clean
              */
-            fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
-            fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+            // fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
+            // fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
           }
 
           break
