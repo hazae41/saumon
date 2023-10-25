@@ -437,6 +437,8 @@ export async function compile(arg: string) {
       if (definitionByName.has(name))
         continue
 
+      console.log("match", text.slice(match.index))
+
       const newline = text.lastIndexOf("\n", match.index)
       const semicolon = text.lastIndexOf(";", match.index)
       const start = Math.max(newline, semicolon) + 1
@@ -462,7 +464,7 @@ export async function compile(arg: string) {
        */
       restart = true
 
-      continue
+      break
     }
 
     if (restart)
@@ -569,6 +571,8 @@ export async function compile(arg: string) {
          */
         fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
         fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+
+        break
       }
     }
 
