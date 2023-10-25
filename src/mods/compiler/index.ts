@@ -445,6 +445,19 @@ export async function compile(arg: string) {
         const block = readBlock(text, { x: start })
         definitionByName.set(name, block)
 
+        if (block.trim().startsWith("export"))
+          continue
+
+        let suffix = ""
+
+        if (text[start + block.length] === "\n")
+          suffix += "\n"
+
+        if (text[start + block.length + 1] === "\n")
+          suffix += "\n"
+
+        text = Strings.replaceAt(text, block + suffix, "", start, start + block.length + suffix.length)
+
         continue
       }
 
@@ -517,8 +530,8 @@ export async function compile(arg: string) {
         /**
          * Clean
          */
-        // fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
-        // fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+        fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
+        fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
       }
     }
 
@@ -526,209 +539,6 @@ export async function compile(arg: string) {
       break
     continue
   }
-
-  // /**
-  //  * Apply macros
-  //  */
-  // {
-  //   for (const i = { x: 0 }; i.x < lines.length; i.x++) {
-  //     if (lines[i.x] == null)
-  //       continue
-
-  //     const matches = lines[i.x].matchAll(/([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\(/g)
-
-  //     for (const match of matches) {
-  //       const i0 = i.x
-  //       const name = match[2]
-
-  //       for (const j = { x: 0 }; j.x < lines[i.x].length; j.x++) {
-  //         /**
-  //          * Skip to next char until we're not in a quote
-  //          */
-  //         for (const _ of allAnyQuotedChars0(lines, i, j))
-  //           continue
-
-  //         /**
-  //          * Stop if we're no longer on the line of the match
-  //          */
-  //         if (i.x !== i0)
-  //           break
-
-  //         /**
-  //          * Skip to next char if this is not the match
-  //          */
-  //         if (j.x !== match.index)
-  //           continue
-  //         const j0 = j.x
-
-  //         /**
-  //          * This is the match
-  //          */
-  //         let input = ""
-
-  //         /**
-  //          * Fill the input with the current char
-  //          */
-  //         input += lines[i.x][j.x]
-
-  //         /**
-  //          * Go to the next char
-  //          */
-  //         j.x++
-
-  //         /**
-  //          * Initial parenthesis depth
-  //          */
-  //         let depth = 0
-
-  //         /**
-  //          * Fill the input until a final closing parenthesis is found
-  //          */
-  //         for (const [char, quoted] of allCharsWithQuote0(lines, i, j)) {
-  //           input += char
-
-  //           if (quoted)
-  //             continue
-
-  //           if (char === "(") {
-  //             depth++
-  //             continue
-  //           }
-
-  //           if (char === ")") {
-  //             depth--
-
-  //             if (depth === 0)
-  //               break
-  //             continue
-  //           }
-
-  //           continue
-  //         }
-
-  //         const i1 = i.x
-  //         const j1 = j.x
-
-  //         console.log(input)
-
-  //         // /**
-  //         //  * It's a macro definition
-  //         //  */
-  //         // if (input.includes(`function ${name}`)) {
-  //         //   let templated = false
-
-  //         //   for (const j = { x: i.x }; j.x < lines.length; j.x++) {
-  //         //     if (lines[j.x] == null)
-  //         //       continue
-
-  //         //     for (let k = 0; k < lines[j.x].length; k++) {
-  //         //       if (lines[j.x][k] === "`" && lines[j.x][k - 1] !== "\\")
-  //         //         templated = !templated
-  //         //       continue
-  //         //     }
-
-  //         //     if (templated)
-  //         //       continue
-
-  //         //     if (lines[j.x] === "}") {
-  //         //       /**
-  //         //        * Save the definition
-  //         //        */
-  //         //       const definition = lines.slice(i.x, j.x + 1).join("\n")
-  //         //       definitionByName.set(name, definition)
-  //         //       break
-  //         //     }
-
-  //         //     continue
-  //         //   }
-
-  //         //   continue
-  //         // }
-
-  //         /**
-  //          * Check if cached
-  //          */
-  //         const cached = outputByInput.get(input)
-
-  //         if (cached != null) {
-  //           lines[i0] = lines[i0].replaceAll(input, cached)
-  //           break
-  //         }
-
-  //         /**
-  //          * Per-call identifier
-  //          */
-  //         const identifier = crypto.randomUUID().split("-")[0]
-
-  //         const definition = definitionByName.get(name) ?? ""
-
-  //         /**
-  //          * Check if CommonJS
-  //          */
-  //         if (typeof require !== "undefined") {
-  //           throw new Error(`CommonJS not supported yet`)
-  //         } else {
-  //           const code = ``
-  //             + imports.join("\n")
-  //             + "\n\n"
-  //             + definition
-  //             + "\n\n"
-  //             + `export const output = ${input}`
-
-  //           fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
-
-  //           const [chunk] = await rollup({
-  //             input: `${dirname}/.${identifier}.saumon.${extension}`,
-  //             plugins: [(ts as any)()],
-  //             external: ["tslib"]
-  //           }).then(x => x.write({
-  //             dir: `${dirname}/.${identifier}.saumon/`,
-  //           })).then(x => x.output)
-
-  //           const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
-
-  //           const { output } = await import(entry)
-
-  //           let awaited = await Promise.resolve(output)
-
-  //           if (typeof awaited === "undefined")
-  //             awaited = ""
-
-  //           if (typeof awaited !== "string")
-  //             throw new Error(`Evaluation failed`)
-
-  //           /**
-  //            * Fill the cache
-  //            */
-  //           outputByInput.set(input, awaited)
-
-  //           /**
-  //            * Apply
-  //            */
-
-  //           lines[i0] = lines[i0].slice(0, j0) + awaited
-
-  //           for (let i = i0 + 1; i < i1; i++)
-  //             delete lines[i]
-
-  //           lines[i1] = lines[i1].slice(j1 + 1)
-
-  //           /**
-  //            * Clean
-  //            */
-  //           // fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
-  //           // fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
-  //         }
-
-  //         break
-  //       }
-
-  //       continue
-  //     }
-
-  //     continue
-  //   }
-  // }
 
   // /**
   //  * Strip definitions
