@@ -437,8 +437,6 @@ export async function compile(arg: string) {
       if (definitionByName.has(name))
         continue
 
-      console.log("match", text.slice(match.index))
-
       const newline = text.lastIndexOf("\n", match.index)
       const semicolon = text.lastIndexOf(";", match.index)
       const start = Math.max(newline, semicolon) + 1
