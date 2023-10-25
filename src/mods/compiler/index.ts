@@ -373,7 +373,7 @@ export async function compile(arg: string) {
      * Rematch all in case the previous macro call returned another macro call
      * e.g. $macro1()$ returns "$macro2()"
      */
-    const matches = [...text.matchAll(/(function )?([a-zA-Z0-9.]*\.)?(\$.+\$)(<.+>)?\(/g)]
+    const matches = [...text.matchAll(/(function )?([a-zA-Z0-9.]*\.)?(\$.+?\$)(<.+>)?\(/g)]
 
     if (matches.length === 0)
       break
