@@ -19,62 +19,60 @@ function isQuoted(text: string, i: Slot, quote: string) {
 }
 
 function* allDoubleQuoted(text: string, i: Slot) {
-  while (isQuoted(text, i, '"')) {
-    yield text[i.x]
-    i.x++
+  yield text[i.x]
+  i.x++
 
-    /**
-     * Yield until end
-     */
-    for (; i.x < text.length; i.x++) {
-      if (isQuoted(text, i, '"')) {
-        yield text[i.x]
-        i.x++
-        break
-      }
+  /**
+   * Yield until end
+   */
+  for (; i.x < text.length; i.x++) {
+    // TODO: break on newline
 
+    if (isQuoted(text, i, '"')) {
       yield text[i.x]
+      i.x++
+      break
     }
+
+    yield text[i.x]
   }
 }
 
 function* allSingleQuoted(text: string, i: Slot) {
-  while (isQuoted(text, i, "'")) {
-    yield text[i.x]
-    i.x++
+  yield text[i.x]
+  i.x++
 
-    /**
-     * Yield until end
-     */
-    for (; i.x < text.length; i.x++) {
-      if (isQuoted(text, i, "'")) {
-        yield text[i.x]
-        i.x++
-        break
-      }
+  /**
+   * Yield until end
+   */
+  for (; i.x < text.length; i.x++) {
+    // TODO: break on newline
 
+    if (isQuoted(text, i, "'")) {
       yield text[i.x]
+      i.x++
+      break
     }
+
+    yield text[i.x]
   }
 }
 
 function* allTemplateQuoted(text: string, i: Slot) {
-  while (isQuoted(text, i, "`")) {
-    yield text[i.x]
-    i.x++
+  yield text[i.x]
+  i.x++
 
-    /**
-     * Yield until end
-     */
-    for (; i.x < text.length; i.x++) {
-      if (isQuoted(text, i, "`")) {
-        yield text[i.x]
-        i.x++
-        break
-      }
-
+  /**
+   * Yield until end
+   */
+  for (; i.x < text.length; i.x++) {
+    if (isQuoted(text, i, "`")) {
       yield text[i.x]
+      i.x++
+      break
     }
+
+    yield text[i.x]
   }
 }
 
@@ -106,21 +104,51 @@ function* allBlockCommented(text: string, i: Slot) {
   }
 }
 
-function* allAnyQuoted(text: string, i: Slot) {
-  if (isQuoted(text, i, "`"))
-    yield* allTemplateQuoted(text, i)
-  else if (isQuoted(text, i, "'"))
-    yield* allSingleQuoted(text, i)
-  else if (isQuoted(text, i, '"'))
-    yield* allDoubleQuoted(text, i)
+function isLineCommented(text: string, i: Slot) {
+  return text.slice(i.x, "//".length) === "//"
+}
+
+function* allLineCommented(text: string, i: Slot) {
+  yield text[i.x]
+  i.x++
+
+  /**
+   * Yield until end
+   */
+  for (; i.x < text.length; i.x++) {
+    if (text[i.x] === "\n") {
+      yield text[i.x]
+      i.x++
+      break
+    }
+
+    yield text[i.x]
+  }
+}
+
+function* allIgnored(text: string, i: Slot) {
+  while (true) {
+    if (isQuoted(text, i, "`"))
+      yield* allTemplateQuoted(text, i)
+    else if (isQuoted(text, i, "'"))
+      yield* allSingleQuoted(text, i)
+    else if (isQuoted(text, i, '"'))
+      yield* allDoubleQuoted(text, i)
+    else if (isStartBlockCommented(text, i))
+      yield* allBlockCommented(text, i)
+    else if (isLineCommented(text, i))
+      yield* allLineCommented(text, i)
+    else
+      break
+  }
 }
 
 function* allLine(text: string, i: Slot) {
   for (; i.x < text.length; i.x++) {
     /**
-     * Do not check quoted
+     * Do not check ignored
      */
-    for (const _ of allAnyQuoted(text, i))
+    for (const _ of allIgnored(text, i))
       yield text[i.x]
 
     /**
@@ -138,7 +166,7 @@ function* allExpression(text: string, i: Slot) {
     /**
      * Do not check quoted
      */
-    for (const _ of allAnyQuoted(text, i))
+    for (const _ of allIgnored(text, i))
       yield text[i.x]
 
     /**
@@ -164,7 +192,7 @@ function readCall(text: string, index: number) {
   const i = { x: 0 }
 
   for (; i.x < text.length; i.x++) {
-    for (const _ of allAnyQuoted(text, i))
+    for (const _ of allIgnored(text, i))
       continue
 
     if (i.x < index)
@@ -178,7 +206,7 @@ function readCall(text: string, index: number) {
     /**
      * Do not check quoted
      */
-    for (const _ of allAnyQuoted(text, i))
+    for (const _ of allIgnored(text, i))
       call += text[i.x]
 
     call += text[i.x]
@@ -212,7 +240,7 @@ function readBlock(text: string, index: number) {
   const i = { x: 0 }
 
   for (; i.x < text.length; i.x++) {
-    for (const _ of allAnyQuoted(text, i))
+    for (const _ of allIgnored(text, i))
       continue
 
     if (i.x < index)
@@ -226,7 +254,7 @@ function readBlock(text: string, index: number) {
     /**
      * Do not check quoted
      */
-    for (const _ of allAnyQuoted(text, i))
+    for (const _ of allIgnored(text, i))
       call += text[i.x]
 
     call += text[i.x]
@@ -254,6 +282,8 @@ function readBlock(text: string, index: number) {
 }
 
 export async function compile(arg: string) {
+  const fileid = crypto.randomUUID().split("-")[0]
+
   const extension = path.extname(arg).slice(1)
 
   if (!extension)
@@ -459,10 +489,12 @@ export async function compile(arg: string) {
       if (typeof require !== "undefined") {
         throw new Error(`CommonJS not supported yet`)
       } else {
+        const callid = crypto.randomUUID().split("-")[0]
+
         /**
          * Per-call identifier
          */
-        const identifier = crypto.randomUUID().split("-")[0]
+        const identifier = fileid + callid
 
         const definition = definitionByName.get(name) ?? ""
 
@@ -475,48 +507,54 @@ export async function compile(arg: string) {
 
         fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
-        const [chunk] = await rollup({
+        const build = await rollup({
           input: `${dirname}/.${identifier}.saumon.${extension}`,
           plugins: [(ts as any)()],
           external: ["tslib"]
-        }).then(x => x.write({
-          dir: `${dirname}/.${identifier}.saumon/`,
-        })).then(x => x.output)
+        })
 
-        const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
+        try {
+          const [chunk] = await build.write({
+            dir: `${dirname}/.${identifier}.saumon/`,
+          }).then(x => x.output)
 
-        const { output } = await import(entry)
+          const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
 
-        let awaited = await Promise.resolve(output)
+          const { output } = await import(entry)
 
-        if (typeof awaited === "undefined")
-          awaited = ""
+          let awaited = await Promise.resolve(output)
 
-        if (typeof awaited !== "string")
-          throw new Error(`Evaluation failed`)
+          if (typeof awaited === "undefined")
+            awaited = ""
 
-        /**
-         * Fill the cache
-         */
-        outputByInput.set(call, awaited)
+          if (typeof awaited !== "string")
+            throw new Error(`Evaluation failed`)
 
-        /**
-         * Apply
-         */
-        text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
+          /**
+           * Fill the cache
+           */
+          outputByInput.set(call, awaited)
 
-        /**
-         * Restart because the content and indexes changed
-         */
-        restart = true
+          /**
+           * Apply
+           */
+          text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
 
-        /**
-         * Clean
-         */
-        fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
-        fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+          /**
+           * Restart because the content and indexes changed
+           */
+          restart = true
 
-        break
+          /**
+           * Clean
+           */
+          fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
+          fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+
+          break
+        } finally {
+          await build.close()
+        }
       }
     }
 

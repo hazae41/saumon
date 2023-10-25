@@ -4,4 +4,4 @@ function $recursive$(size: number) {
   return `$recursive$(${size - 1})`
 }
 
-$recursive$(5)
+$recursive$(5);

@@ -3,4 +3,3 @@ console.log(`function $lol() {
 }`)
 
 console.log(`$lol()`)
-
