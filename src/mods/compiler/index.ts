@@ -417,14 +417,11 @@ export async function compile(arg: string) {
     if (matches.length === 0)
       break
 
+    let restart = false
+
     /**
-     * Reverse the matches so we patch macro calls in macro calls
-     * e.g. $macro1$($macro2$()) will first patch $macro2$() then $macro1$()
+     * Process all definitions
      */
-    matches.reverse()
-
-    let stop = true
-
     for (const match of matches) {
       if (match.index == null)
         continue
@@ -432,36 +429,69 @@ export async function compile(arg: string) {
       const [_raw, func, _prefix, name, _generic] = match
 
       /**
-       * Check if definition
+       * Ensure it's a macro definition
        */
-      if (func) {
-        if (definitionByName.has(name))
-          continue
-
-        const newline = text.lastIndexOf("\n", match.index)
-        const semicolon = text.lastIndexOf(";", match.index)
-        const start = Math.max(newline, semicolon) + 1
-
-        const block = readBlock(text, { x: start })
-        definitionByName.set(name, block)
-
-        if (block.trim().startsWith("export"))
-          continue
-
-        let suffix = ""
-
-        if (text[start + block.length] === "\n")
-          suffix += "\n"
-
-        if (text[start + block.length + 1] === "\n")
-          suffix += "\n"
-
-        text = Strings.replaceAt(text, block + suffix, "", start, start + block.length + suffix.length)
-
+      if (!func)
         continue
-      }
+
+      if (definitionByName.has(name))
+        continue
+
+      const newline = text.lastIndexOf("\n", match.index)
+      const semicolon = text.lastIndexOf(";", match.index)
+      const start = Math.max(newline, semicolon) + 1
+
+      const block = readBlock(text, { x: start })
+      definitionByName.set(name, block)
+
+      if (block.trim().startsWith("export"))
+        continue
+
+      let suffix = ""
+
+      if (text[start + block.length] === "\n")
+        suffix += "\n"
+
+      if (text[start + block.length + 1] === "\n")
+        suffix += "\n"
+
+      text = Strings.replaceAt(text, block + suffix, "", start, start + block.length + suffix.length)
+
+      /**
+       * Rematch because the indexes changed
+       */
+      restart = true
+
+      continue
+    }
+
+    if (restart)
+      continue
+
+    /**
+     * Reverse the matches so we can patch macro calls in macro calls
+     * e.g. $macro1$($macro2$()) will first patch $macro2$() then $macro1$()
+     */
+    matches.reverse()
+
+    /**
+     * Process all macro calls
+     */
+    for (const match of matches) {
+      if (match.index == null)
+        continue
+
+      const [_raw, func, _prefix, name, _generic] = match
+
+      /**
+       * Ensure it's a macro call
+       */
+      if (func)
+        continue
 
       const call = readCall(text, { x: match.index })
+
+      console.log(_raw, name, call)
 
       /**
        * Check if cached
@@ -470,16 +500,14 @@ export async function compile(arg: string) {
 
       if (cached != null) {
         text = Strings.replaceAt(text, call, cached, match.index, match.index + cached.length)
-        stop = false
+
+        /**
+         * Restart because the content changed
+         */
+        restart = true
+
         break
       }
-
-      /**
-       * Per-call identifier
-       */
-      const identifier = crypto.randomUUID().split("-")[0]
-
-      const definition = definitionByName.get(name) ?? ""
 
       /**
        * Check if CommonJS
@@ -487,6 +515,15 @@ export async function compile(arg: string) {
       if (typeof require !== "undefined") {
         throw new Error(`CommonJS not supported yet`)
       } else {
+        console.log(call)
+
+        /**
+         * Per-call identifier
+         */
+        const identifier = crypto.randomUUID().split("-")[0]
+
+        const definition = definitionByName.get(name) ?? ""
+
         const code = ``
           + imports.join("\n")
           + "\n\n"
@@ -525,7 +562,11 @@ export async function compile(arg: string) {
          * Apply
          */
         text = Strings.replaceAt(text, call, awaited, match.index, match.index + awaited.length)
-        stop = false
+
+        /**
+         * Restart because the content changed
+         */
+        restart = true
 
         /**
          * Clean
@@ -535,9 +576,9 @@ export async function compile(arg: string) {
       }
     }
 
-    if (stop)
-      break
-    continue
+    if (restart)
+      continue
+    break
   }
 
   // /**
