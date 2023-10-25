@@ -26,13 +26,13 @@ if (command === "build") {
     }
   }
 
-  async function spawn(file: string) {
+  function spawn(file: string) {
     new Worker(new URL("./worker.cli.js", import.meta.url), { workerData: file })
   }
 
   for (const path of paths) {
     if (options.recursive)
-      recursive(path)
+      await recursive(path)
     else
       spawn(path)
   }

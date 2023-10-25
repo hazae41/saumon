@@ -282,8 +282,6 @@ function readBlock(text: string, index: number) {
 }
 
 export async function compile(arg: string) {
-  const fileid = crypto.randomUUID().split("-")[0]
-
   const extension = path.extname(arg).slice(1)
 
   if (!extension)
@@ -489,12 +487,10 @@ export async function compile(arg: string) {
       if (typeof require !== "undefined") {
         throw new Error(`CommonJS not supported yet`)
       } else {
-        const callid = crypto.randomUUID().split("-")[0]
-
         /**
          * Per-call identifier
          */
-        const identifier = fileid + callid
+        const identifier = crypto.randomUUID().split("-")[0]
 
         const definition = definitionByName.get(name) ?? ""
 
