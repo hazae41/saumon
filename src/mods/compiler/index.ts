@@ -9,6 +9,250 @@ export namespace Strings {
   }
 }
 
+interface Slot {
+  x: number
+}
+
+
+function isQuoted(text: string, i: Slot, quote: string) {
+  return text[i.x] === quote && text[i.x - 1] !== "\\"
+}
+
+function* allDoubleQuoted(text: string, i: Slot) {
+  while (isQuoted(text, i, '"')) {
+    yield text[i.x]
+    i.x++
+
+    /**
+     * Yield until end
+     */
+    for (; i.x < text.length; i.x++) {
+      if (isQuoted(text, i, '"')) {
+        yield text[i.x]
+        i.x++
+        break
+      }
+
+      yield text[i.x]
+    }
+  }
+}
+
+function* allSingleQuoted(text: string, i: Slot) {
+  while (isQuoted(text, i, "'")) {
+    yield text[i.x]
+    i.x++
+
+    /**
+     * Yield until end
+     */
+    for (; i.x < text.length; i.x++) {
+      if (isQuoted(text, i, "'")) {
+        yield text[i.x]
+        i.x++
+        break
+      }
+
+      yield text[i.x]
+    }
+  }
+}
+
+function* allTemplateQuoted(text: string, i: Slot) {
+  while (isQuoted(text, i, "`")) {
+    yield text[i.x]
+    i.x++
+
+    /**
+     * Yield until end
+     */
+    for (; i.x < text.length; i.x++) {
+      if (isQuoted(text, i, "`")) {
+        yield text[i.x]
+        i.x++
+        break
+      }
+
+      yield text[i.x]
+    }
+  }
+}
+
+function isStartBlockCommented(text: string, i: Slot) {
+  return text.slice(i.x, "/*".length) === "/*"
+}
+
+function isEndBlockCommented(text: string, i: Slot) {
+  return text.slice(i.x, "*/".length) === "*/"
+}
+
+function* allBlockCommented(text: string, i: Slot) {
+  while (isStartBlockCommented(text, i)) {
+    yield text[i.x]
+    i.x++
+
+    /**
+     * Yield until end
+     */
+    for (; i.x < text.length; i.x++) {
+      if (isEndBlockCommented(text, i)) {
+        yield text[i.x]
+        i.x++
+        break
+      }
+
+      yield text[i.x]
+    }
+  }
+}
+
+function* allAnyQuoted(text: string, i: Slot) {
+  if (isQuoted(text, i, "`"))
+    yield* allTemplateQuoted(text, i)
+  else if (isQuoted(text, i, "'"))
+    yield* allSingleQuoted(text, i)
+  else if (isQuoted(text, i, '"'))
+    yield* allDoubleQuoted(text, i)
+}
+
+function* allLine(text: string, i: Slot) {
+  for (; i.x < text.length; i.x++) {
+    /**
+     * Do not check quoted
+     */
+    for (const _ of allAnyQuoted(text, i))
+      yield text[i.x]
+
+    /**
+     * Stop at end of line
+     */
+    if (text[i.x] === "\n")
+      break
+
+    yield text[i.x]
+  }
+}
+
+function* allExpression(text: string, i: Slot) {
+  for (; i.x < text.length; i.x++) {
+    /**
+     * Do not check quoted
+     */
+    for (const _ of allAnyQuoted(text, i))
+      yield text[i.x]
+
+    /**
+     * Stop at end of line
+     */
+    if (text[i.x] === "\n")
+      break
+
+    /**
+     * Stop at the end of expression
+     */
+    if (text[i.x] === ";")
+      break
+
+    yield text[i.x]
+  }
+}
+
+function readCall(text: string, index: number) {
+  let call = ""
+  let depth = 0
+
+  const i = { x: 0 }
+
+  for (; i.x < text.length; i.x++) {
+    for (const _ of allAnyQuoted(text, i))
+      continue
+
+    if (i.x < index)
+      continue
+    if (i.x > index)
+      return
+    break
+  }
+
+  for (; i.x < text.length; i.x++) {
+    /**
+     * Do not check quoted
+     */
+    for (const _ of allAnyQuoted(text, i))
+      call += text[i.x]
+
+    call += text[i.x]
+
+    if (text[i.x] === "(") {
+      depth++
+      continue
+    }
+
+    if (text[i.x] === ")") {
+      depth--
+
+      if (depth === 0)
+        break
+      continue
+    }
+
+    continue
+  }
+
+  if (depth !== 0)
+    throw new Error(`Unfinished call`)
+
+  return call
+}
+
+function readBlock(text: string, index: number) {
+  let call = ""
+  let depth = 0
+
+  const i = { x: 0 }
+
+  for (; i.x < text.length; i.x++) {
+    for (const _ of allAnyQuoted(text, i))
+      continue
+
+    if (i.x < index)
+      continue
+    if (i.x > index)
+      return
+    break
+  }
+
+  for (; i.x < text.length; i.x++) {
+    /**
+     * Do not check quoted
+     */
+    for (const _ of allAnyQuoted(text, i))
+      call += text[i.x]
+
+    call += text[i.x]
+
+    if (text[i.x] === "{") {
+      depth++
+      continue
+    }
+
+    if (text[i.x] === "}") {
+      depth--
+
+      if (depth === 0)
+        break
+      continue
+    }
+
+    continue
+  }
+
+  if (depth !== 0)
+    throw new Error(`Unfinished block`)
+
+  return call
+}
+
 export async function compile(arg: string) {
   const extension = path.extname(arg).slice(1)
 
@@ -27,317 +271,6 @@ export async function compile(arg: string) {
   const imports = new Array<string>()
   const outputByInput = new Map<string, string>()
   const definitionByName = new Map<string, string>()
-
-  // const lines = input.split("\n")
-
-  interface Slot {
-    x: number
-  }
-
-  // /**
-  //  * Yield each char in a lines array
-  //  * @param lines 
-  //  * @param i line
-  //  * @param j char
-  //  */
-  // function* allChars0(lines: string[], i: Slot, j: Slot) {
-  //   /**
-  //    * Continue on the current line
-  //    */
-  //   for (; j.x < lines[i.x].length; j.x++)
-  //     yield lines[i.x][j.x]
-
-  //   /**
-  //    * Go to next line
-  //    */
-  //   i.x++
-
-  //   /**
-  //    * Continue for all next lines
-  //    */
-  //   for (; i.x < lines.length; i.x++) {
-  //     if (lines[i.x] == null)
-  //       continue
-
-  //     /**
-  //      * Newline
-  //      */
-  //     yield "\n"
-
-  //     for (j.x = 0; j.x < lines[i.x].length; j.x++)
-  //       yield lines[i.x][j.x]
-  //   }
-  // }
-
-  // function isQuoted0(lines: string[], i: Slot, j: Slot, quote: string) {
-  //   return lines[i.x][j.x] === quote && lines[i.x][j.x - 1] !== "\\"
-  // }
-
-  // /**
-  //  * Yield all quoted chars if the current char is quoted
-  //  * @param lines 
-  //  * @param i 
-  //  * @param j 
-  //  * @param quote 
-  //  * @returns 
-  //  */
-  // function* allQuotedChars0(lines: string[], i: Slot, j: Slot, quote: string) {
-  //   if (!isQuoted0(lines, i, j, quote))
-  //     return
-
-  //   yield lines[i.x][j.x]
-  //   j.x++
-
-  //   /**
-  //    * Yield until end
-  //    */
-  //   for (const char of allChars0(lines, i, j)) {
-  //     if (lines[i.x][j.x] === quote && lines[i.x][j.x - 1] !== "\\") {
-  //       yield lines[i.x][j.x]
-  //       j.x++
-  //       break
-  //     }
-
-  //     yield char
-  //   }
-  // }
-
-  // function* allAnyQuotedChars0(lines: string[], i: Slot, j: Slot) {
-  //   for (const quoted of allQuotedChars0(lines, i, j, "`"))
-  //     yield quoted
-  //   for (const quoted of allQuotedChars0(lines, i, j, "'"))
-  //     yield quoted
-  //   for (const quoted of allQuotedChars0(lines, i, j, '"'))
-  //     yield quoted
-  // }
-
-  // function* allCharsWithQuote0(lines: string[], i: Slot, j: Slot) {
-  //   for (const char of allChars0(lines, i, j)) {
-  //     const quoteds = allAnyQuotedChars0(lines, i, j)
-
-  //     let next = quoteds.next()
-
-  //     if (next.done) {
-  //       yield [char, false] as const
-  //       continue
-  //     }
-
-  //     for (; !next.done; next = quoteds.next())
-  //       yield [next.value, true] as const
-
-  //     /**
-  //      * Go back
-  //      */
-  //     j.x--
-
-  //     continue
-  //   }
-  // }
-
-  function isQuoted(text: string, i: Slot, quote: string) {
-    return text[i.x] === quote && text[i.x - 1] !== "\\"
-  }
-
-  function* allDoubleQuoted(text: string, i: Slot) {
-    while (isQuoted(text, i, '"')) {
-      yield text[i.x]
-      i.x++
-
-      /**
-       * Yield until end
-       */
-      for (; i.x < text.length; i.x++) {
-        if (isQuoted(text, i, '"')) {
-          yield text[i.x]
-          i.x++
-          break
-        }
-
-        yield text[i.x]
-      }
-    }
-  }
-
-  function* allSingleQuoted(text: string, i: Slot) {
-    while (isQuoted(text, i, "'")) {
-      yield text[i.x]
-      i.x++
-
-      /**
-       * Yield until end
-       */
-      for (; i.x < text.length; i.x++) {
-        if (isQuoted(text, i, "'")) {
-          yield text[i.x]
-          i.x++
-          break
-        }
-
-        yield text[i.x]
-      }
-    }
-  }
-
-  function* allTemplateQuoted(text: string, i: Slot) {
-    while (isQuoted(text, i, "`")) {
-      yield text[i.x]
-      i.x++
-
-      /**
-       * Yield until end
-       */
-      for (; i.x < text.length; i.x++) {
-        if (isQuoted(text, i, "`")) {
-          yield text[i.x]
-          i.x++
-          break
-        }
-
-        yield text[i.x]
-      }
-    }
-  }
-
-  function* allAnyQuoted(text: string, i: Slot) {
-    if (isQuoted(text, i, "`"))
-      yield* allTemplateQuoted(text, i)
-    else if (isQuoted(text, i, "'"))
-      yield* allSingleQuoted(text, i)
-    else if (isQuoted(text, i, '"'))
-      yield* allDoubleQuoted(text, i)
-  }
-
-  function* allUnquoted(text: string, i: Slot) {
-    for (; i.x < text.length; i.x++) {
-      /**
-       * Skip until not in a quote
-       */
-      for (const _ of allAnyQuoted(text, i))
-        continue
-
-      /**
-       * This char is not in a quote
-       */
-      yield text[i.x]
-
-      /**
-       * Check next char
-       */
-      continue
-    }
-  }
-
-  function* allLine(text: string, i: Slot) {
-    for (; i.x < text.length; i.x++) {
-      /**
-       * Do not check quoted
-       */
-      for (const _ of allAnyQuoted(text, i))
-        yield text[i.x]
-
-      /**
-       * Stop at end of line
-       */
-      if (text[i.x] === "\n")
-        break
-
-      yield text[i.x]
-    }
-  }
-
-  function* allExpression(text: string, i: Slot) {
-    for (; i.x < text.length; i.x++) {
-      /**
-       * Do not check quoted
-       */
-      for (const _ of allAnyQuoted(text, i))
-        yield text[i.x]
-
-      /**
-       * Stop at end of line
-       */
-      if (text[i.x] === "\n")
-        break
-
-      /**
-       * Stop at the end of expression
-       */
-      if (text[i.x] === ";")
-        break
-
-      yield text[i.x]
-    }
-  }
-
-  function readCall(text: string, i: Slot) {
-    let call = ""
-    let depth = 0
-
-    for (; i.x < text.length; i.x++) {
-      /**
-       * Do not check quoted
-       */
-      for (const _ of allAnyQuoted(text, i))
-        call += text[i.x]
-
-      call += text[i.x]
-
-      if (text[i.x] === "(") {
-        depth++
-        continue
-      }
-
-      if (text[i.x] === ")") {
-        depth--
-
-        if (depth === 0)
-          break
-        continue
-      }
-
-      continue
-    }
-
-    if (depth !== 0)
-      throw new Error(`Unfinished call`)
-
-    return call
-  }
-
-  function readBlock(text: string, i: Slot) {
-    let call = ""
-    let depth = 0
-
-    for (; i.x < text.length; i.x++) {
-      /**
-       * Do not check quoted
-       */
-      for (const _ of allAnyQuoted(text, i))
-        call += text[i.x]
-
-      call += text[i.x]
-
-      if (text[i.x] === "{") {
-        depth++
-        continue
-      }
-
-      if (text[i.x] === "}") {
-        depth--
-
-        if (depth === 0)
-          break
-        continue
-      }
-
-      continue
-    }
-
-    if (depth !== 0)
-      throw new Error(`Unfinished block`)
-
-    return call
-  }
 
   /**
    * Process expressions
@@ -441,7 +374,14 @@ export async function compile(arg: string) {
       const semicolon = text.lastIndexOf(";", match.index)
       const start = Math.max(newline, semicolon) + 1
 
-      const block = readBlock(text, { x: start })
+      const block = readBlock(text, start)
+
+      /**
+       * Block is probably in a quote or in a comment
+       */
+      if (block == null)
+        continue
+
       definitionByName.set(name, block)
 
       if (block.trim().startsWith("export"))
@@ -489,7 +429,13 @@ export async function compile(arg: string) {
       if (func)
         continue
 
-      const call = readCall(text, { x: match.index })
+      const call = readCall(text, match.index)
+
+      /**
+       * Call is probably in a quote or in a comment
+       */
+      if (call == null)
+        continue
 
       /**
        * Check if cached
