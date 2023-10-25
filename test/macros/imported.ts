@@ -1,3 +1,3 @@
-export function $imported$(x: any): void {
+export function $imported$(x: unknown): void {
   return `console.log(${JSON.stringify(x)})` as any
 }

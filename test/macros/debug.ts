@@ -1,7 +1,7 @@
 export const debugging = true
 
-export function $debug$(x: string) {
+export function $debug$(x: unknown) {
   if (!debugging)
     return
-  return `console.debug("${x}")`
+  return `console.debug(${JSON.stringify(x)})`
 }
