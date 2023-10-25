@@ -1,4 +1,5 @@
 import ts from "@rollup/plugin-typescript";
+import worker from "@surma/rollup-plugin-off-main-thread";
 import dts from "rollup-plugin-dts";
 import externals from "rollup-plugin-node-externals";
 
@@ -44,7 +45,7 @@ export const config = [
       sourcemap: true,
       entryFileNames: "[name].mjs"
     }],
-    plugins: [externals(), ts()],
+    plugins: [externals(), ts(), worker()],
   },
   {
     input: "./src/index.test.ts",

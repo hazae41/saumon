@@ -1,5 +1,5 @@
 import { walk } from "libs/walk/walk.js";
-import { compile } from "mods/compiler/index.js";
+import { Worker } from "worker_threads";
 
 const [node, main, command, ...args] = process.argv
 
@@ -22,15 +22,19 @@ if (command === "build") {
 
       if (!file.endsWith(`.macro.${extension}`))
         continue
-      compile(file)
+      spawn(file)
     }
+  }
+
+  async function spawn(file: string) {
+    new Worker(new URL("./worker.cli.js", import.meta.url), { workerData: file })
   }
 
   for (const path of paths) {
     if (options.recursive)
       recursive(path)
     else
-      compile(path)
+      spawn(path)
   }
 } else {
   throw new Error(`Unknown command ${command}`)

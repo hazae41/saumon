@@ -1,5 +1,4 @@
 import ts from "@rollup/plugin-typescript";
-import { existsSync } from "fs";
 import fs from "fs/promises";
 import path from "path";
 import { rollup } from "rollup";
@@ -515,9 +514,6 @@ export async function compile(arg: string) {
         })
 
         try {
-          if (!existsSync(`${dirname}/.${identifier}.saumon.${extension}`))
-            throw new Error(`${dirname}/.${identifier}.saumon.${extension}`)
-
           const [chunk] = await build.write({
             dir: `${dirname}/.${identifier}.saumon/`,
           }).then(x => x.output)
