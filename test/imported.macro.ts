@@ -1,6 +1,17 @@
-import { $imported$ } from "./macros/imported.js"
+function $random$() {
+  return `${Math.random()}` as any
+}
 
-$imported$(`
+`import
+
+lol`; import { $imported$ } from "./macros/imported.js";
+
+/**
+ * @macro
+ * $imported$(`hello
+ * world`)
+ */
+"lol"; $imported$(`
 it works {
 
   lol
