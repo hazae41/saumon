@@ -497,7 +497,7 @@ export async function compile(arg: string) {
       const cached = outputByInput.get(call)
 
       if (cached != null) {
-        text = Strings.replaceAt(text, call, cached, match.index, match.index + cached.length)
+        text = Strings.replaceAt(text, call, cached, match.index, match.index + call.length)
 
         /**
          * Restart because the content and indexes changed
@@ -557,7 +557,7 @@ export async function compile(arg: string) {
         /**
          * Apply
          */
-        text = Strings.replaceAt(text, call, awaited, match.index, match.index + awaited.length)
+        text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
 
         /**
          * Restart because the content and indexes changed
@@ -576,68 +576,6 @@ export async function compile(arg: string) {
       continue
     break
   }
-
-  // /**
-  //  * Strip definitions
-  //  */
-  // {
-  //   let templated = false
-
-  //   for (let i = 0; i < lines.length; i++) {
-  //     if (lines[i] == null)
-  //       continue
-
-  //     for (let k = 0; k < lines[i].length; k++) {
-  //       if (lines[i][k] === "`" && lines[i][k - 1] !== "\\")
-  //         templated = !templated
-  //       continue
-  //     }
-
-  //     const match = lines[i].match(/function (\$.+\$)(<.+>)?\([^\)]*\)/)
-
-  //     if (match == null)
-  //       continue
-  //     if (lines[i].startsWith("export"))
-  //       continue
-
-  //     /**
-  //      * Strip definition
-  //      */
-  //     {
-  //       let templated = false
-
-  //       for (let j = i; j < lines.length; j++) {
-  //         if (lines[j] == null)
-  //           continue
-
-  //         for (let k = 0; k < lines[j].length; k++) {
-  //           if (lines[j][k] === "`" && lines[j][k - 1] !== "\\")
-  //             templated = !templated
-  //           continue
-  //         }
-
-  //         if (templated) {
-  //           delete lines[j]
-  //           continue
-  //         }
-
-  //         if (lines[j] === "}") {
-  //           delete lines[j]
-
-  //           if (lines[j + 1] === "")
-  //             delete lines[j + 1]
-
-  //           break
-  //         }
-
-  //         delete lines[j]
-  //         continue
-  //       }
-  //     }
-
-  //     continue
-  //   }
-  // }
 
   fs.writeFileSync(`${dirname}/${basename}.${extension}`, text, "utf8")
 }
