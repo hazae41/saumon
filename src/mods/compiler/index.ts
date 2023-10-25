@@ -458,7 +458,7 @@ export async function compile(arg: string) {
       text = Strings.replaceAt(text, block + suffix, "", start, start + block.length + suffix.length)
 
       /**
-       * Rematch because the indexes changed
+       * Restart because the content and indexes changed
        */
       restart = true
 
@@ -491,8 +491,6 @@ export async function compile(arg: string) {
 
       const call = readCall(text, { x: match.index })
 
-      console.log(_raw, name, call)
-
       /**
        * Check if cached
        */
@@ -502,7 +500,7 @@ export async function compile(arg: string) {
         text = Strings.replaceAt(text, call, cached, match.index, match.index + cached.length)
 
         /**
-         * Restart because the content changed
+         * Restart because the content and indexes changed
          */
         restart = true
 
@@ -515,8 +513,6 @@ export async function compile(arg: string) {
       if (typeof require !== "undefined") {
         throw new Error(`CommonJS not supported yet`)
       } else {
-        console.log(call)
-
         /**
          * Per-call identifier
          */
@@ -564,7 +560,7 @@ export async function compile(arg: string) {
         text = Strings.replaceAt(text, call, awaited, match.index, match.index + awaited.length)
 
         /**
-         * Restart because the content changed
+         * Restart because the content and indexes changed
          */
         restart = true
 
