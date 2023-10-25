@@ -1,5 +1,6 @@
 import ts from "@rollup/plugin-typescript";
-import fs from "fs";
+import { existsSync } from "fs";
+import fs from "fs/promises";
 import path from "path";
 import { rollup } from "rollup";
 
@@ -296,7 +297,7 @@ export async function compile(arg: string) {
   const filename = path.join(process.cwd(), arg)
   const dirname = path.dirname(filename)
 
-  let text = fs.readFileSync(filename, "utf8")
+  let text = await fs.readFile(filename, "utf8")
 
   const imports = new Array<string>()
   const outputByInput = new Map<string, string>()
@@ -505,7 +506,7 @@ export async function compile(arg: string) {
           + "\n\n"
           + `export const output = ${call}`
 
-        fs.writeFileSync(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
+        await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
         const build = await rollup({
           input: `${dirname}/.${identifier}.saumon.${extension}`,
@@ -514,6 +515,9 @@ export async function compile(arg: string) {
         })
 
         try {
+          if (!existsSync(`${dirname}/.${identifier}.saumon.${extension}`))
+            throw new Error(`${dirname}/.${identifier}.saumon.${extension}`)
+
           const [chunk] = await build.write({
             dir: `${dirname}/.${identifier}.saumon/`,
           }).then(x => x.output)
@@ -548,8 +552,8 @@ export async function compile(arg: string) {
           /**
            * Clean
            */
-          fs.rmSync(`${dirname}/.${identifier}.saumon.${extension}`)
-          fs.rmSync(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+          await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`)
+          await fs.rm(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
 
           break
         } finally {
@@ -563,5 +567,5 @@ export async function compile(arg: string) {
     break
   }
 
-  fs.writeFileSync(`${dirname}/${basename}.${extension}`, text, "utf8")
+  await fs.writeFile(`${dirname}/${basename}.${extension}`, text, "utf8")
 }

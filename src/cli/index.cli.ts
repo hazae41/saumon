@@ -1,4 +1,4 @@
-import { walkSync } from "libs/walk/walk.js";
+import { walk } from "libs/walk/walk.js";
 import { compile } from "mods/compiler/index.js";
 
 const [node, main, command, ...args] = process.argv
@@ -17,7 +17,7 @@ if (command === "build") {
   }
 
   async function recursive(path: string) {
-    for (const file of walkSync(path)) {
+    for await (const file of walk(path)) {
       const extension = file.split(".").at(-1)
 
       if (!file.endsWith(`.macro.${extension}`))
