@@ -1,6 +1,5 @@
 import fs from "fs/promises";
 import path from "path";
-import ts from "typescript";
 
 declare global {
   const Bun: unknown
@@ -320,7 +319,55 @@ export async function compile(arg: string) {
 
     if (expression.trim().startsWith("import ")) {
       imports.push(expression)
+
+      /**
+       * Don't do further checks
+       */
       continue
+    }
+
+    {
+      let previous: number | undefined
+      let index: number
+
+      /**
+       * Search all require() calls (even quoted or commented)
+       */
+      while ((index = expression.indexOf("require(", previous))) {
+        previous = index
+
+        const i = { x: 0 }
+
+        /**
+         * Try to find it in unquoted and uncommented code
+         */
+        for (; i.x < text.length; i.x++) {
+          for (const _ of allIgnored(text, i))
+            continue
+
+          if (i.x < index)
+            continue
+          if (i.x > index)
+            break
+          break
+        }
+
+        /**
+         * Found it in unquoted and uncommented code
+         */
+        if (i.x === index) {
+          imports.push(expression)
+
+          /**
+           * Stop searching
+           */
+          break
+        }
+      }
+
+      /**
+       * Go to next check
+       */
     }
 
     continue
@@ -506,48 +553,7 @@ export async function compile(arg: string) {
 
         await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
-        let importable: string | undefined
-
-        console.log(Bun)
-
-        if (typeof Bun === "undefined" && extension === "ts" || extension === "tsx") {
-          const program = ts.createProgram([
-            `${dirname}/.${identifier}.saumon.${extension}`
-          ], {
-            rootDir: dirname,
-            module: ts.ModuleKind.NodeNext,
-            moduleResolution: ts.ModuleResolutionKind.NodeNext,
-            outDir: `${dirname}/../.${identifier}.saumon/`
-          })
-
-          const preDiagnostics = ts.getPreEmitDiagnostics(program)
-          const { emitSkipped, diagnostics } = program.emit()
-          const allDiagnostics = [...preDiagnostics, ...diagnostics]
-
-          for (const diagnostic of allDiagnostics) {
-            const { file, start, messageText } = diagnostic
-
-            if (file) {
-              const { line, character } = ts.getLineAndCharacterOfPosition(file, start!);
-              const message = ts.flattenDiagnosticMessageText(messageText, "\n");
-              console.warn(`${file.fileName} (${line + 1},${character + 1}): ${message}`);
-            } else {
-              console.warn(ts.flattenDiagnosticMessageText(messageText, "\n"));
-            }
-          }
-
-          if (emitSkipped)
-            throw new Error(`Transpilation failed`)
-
-          importable = `${dirname}/../.${identifier}.saumon/.${identifier}.saumon.js`
-        } else {
-          importable = `${dirname}/.${identifier}.saumon.${extension}`
-        }
-
-        if (importable == null)
-          throw new Error(`Could not find file`)
-
-        const { output } = await import(importable)
+        const { output } = await import(`${dirname}/.${identifier}.saumon.${extension}`)
 
         let awaited = await Promise.resolve(output)
 
