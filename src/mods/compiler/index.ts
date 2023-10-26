@@ -483,7 +483,7 @@ export async function compile(arg: string) {
       /**
        * Check if CommonJS
        */
-      if (typeof require !== "undefined") {
+      if (!process.versions.bun && typeof require !== "undefined") {
         throw new Error(`CommonJS not supported yet`)
       } else {
         /**
@@ -504,7 +504,7 @@ export async function compile(arg: string) {
 
         let importable: string | undefined
 
-        if (extension === "ts" || extension === "tsx") {
+        if (!process.versions.bun && extension === "ts" || extension === "tsx") {
           const program = ts.createProgram([
             `${dirname}/.${identifier}.saumon.${extension}`
           ], {
