@@ -504,6 +504,8 @@ export async function compile(arg: string) {
 
         let importable: string | undefined
 
+        console.log(process.versions.bun)
+
         if (!process.versions.bun && extension === "ts" || extension === "tsx") {
           const program = ts.createProgram([
             `${dirname}/.${identifier}.saumon.${extension}`
