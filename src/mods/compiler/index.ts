@@ -508,9 +508,10 @@ export async function compile(arg: string) {
           const program = ts.createProgram([
             `${dirname}/.${identifier}.saumon.${extension}`
           ], {
+            rootDir: dirname,
             module: ts.ModuleKind.NodeNext,
             moduleResolution: ts.ModuleResolutionKind.NodeNext,
-            outDir: `${dirname}/.${identifier}.saumon/`
+            outDir: `${dirname}/../.${identifier}.saumon/`
           })
 
           const preDiagnostics = ts.getPreEmitDiagnostics(program)
@@ -532,7 +533,7 @@ export async function compile(arg: string) {
           if (emitSkipped)
             throw new Error(`Transpilation failed`)
 
-          importable = `${dirname}/.${identifier}.saumon/.${identifier}.saumon.js`
+          importable = `${dirname}/../.${identifier}.saumon/.${identifier}.saumon.js`
         } else {
           importable = `${dirname}/.${identifier}.saumon.${extension}`
         }
@@ -569,7 +570,7 @@ export async function compile(arg: string) {
          * Clean
          */
         await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
-        await fs.rm(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+        await fs.rm(`${dirname}/../.${identifier}.saumon`, { recursive: true, force: true })
 
         break
       }
