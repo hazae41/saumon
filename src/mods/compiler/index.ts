@@ -279,17 +279,23 @@ function readBlock(text: string, index: number) {
   return call
 }
 
-export async function compile(arg: string) {
-  const extension = path.extname(arg).slice(1)
+export interface CompileOptions {
+  readonly debug?: boolean
+}
+
+export async function compile(file: string, options: CompileOptions = {}) {
+  const { debug = false } = options
+
+  const extension = path.extname(file).slice(1)
 
   if (!extension)
     throw new Error(`Not a macro file`)
 
-  if (!arg.endsWith(`.macro.${extension}`))
+  if (!file.endsWith(`.macro.${extension}`))
     throw new Error(`Not a macro file`)
 
-  const basename = path.basename(arg, `.macro.${extension}`)
-  const filename = path.join(process.cwd(), arg)
+  const basename = path.basename(file, `.macro.${extension}`)
+  const filename = path.join(process.cwd(), file)
   const dirname = path.dirname(filename)
 
   let text = await fs.readFile(filename, "utf8")
@@ -571,10 +577,12 @@ export async function compile(arg: string) {
 
         break
       } finally {
-        /**
-         * Clean
-         */
-        await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
+        if (!debug) {
+          /**
+           * Clean
+           */
+          await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
+        }
       }
     }
 

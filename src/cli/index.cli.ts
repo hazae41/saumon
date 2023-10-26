@@ -5,11 +5,20 @@ const [node, main, command, ...args] = process.argv
 
 if (command === "build") {
   const paths = new Array<string>()
-  const options = { recursive: false }
+
+  const options: {
+    recursive?: boolean,
+    debug?: boolean
+  } = {}
 
   for (const arg of args) {
     if (arg === "-r" || arg === "--recursive") {
       options.recursive = true
+      continue
+    }
+
+    if (arg === "-d" || arg === "--debug") {
+      options.debug = true
       continue
     }
 
@@ -27,7 +36,8 @@ if (command === "build") {
   }
 
   function spawn(file: string) {
-    new Worker(new URL("./worker.cli.js", import.meta.url), { workerData: file })
+    const workerData = { file, options }
+    new Worker(new URL("./worker.cli.js", import.meta.url), { workerData })
   }
 
   for (const path of paths) {
