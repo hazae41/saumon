@@ -1,10 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
 
-declare global {
-  const Bun: unknown
-}
-
 export namespace Strings {
   export function replaceAt(text: string, search: string, replace: string, start: number, end: number) {
     return text.slice(0, start) + text.slice(start, end).replace(search, replace) + text.slice(end)
@@ -333,7 +329,7 @@ export async function compile(arg: string) {
       /**
        * Search all require() calls (even quoted or commented)
        */
-      while ((index = expression.indexOf("require(", previous))) {
+      while ((index = expression.indexOf("require(", previous)) !== -1) {
         previous = index
 
         const i = { x: 0 }
@@ -532,60 +528,53 @@ export async function compile(arg: string) {
       }
 
       /**
-       * Check if CommonJS
+       * Per-call identifier
        */
-      if (typeof Bun === "undefined" && typeof require !== "undefined") {
-        throw new Error(`CommonJS not supported yet`)
-      } else {
-        /**
-         * Per-call identifier
-         */
-        const identifier = crypto.randomUUID().split("-")[0]
+      const identifier = crypto.randomUUID().split("-")[0]
 
-        const definition = definitionByName.get(name) ?? ""
+      const definition = definitionByName.get(name) ?? ""
 
-        const code = ``
-          + imports.join("\n")
-          + "\n\n"
-          + definition
-          + "\n\n"
-          + `export const output = ${call}`
+      const code = ``
+        + imports.join("\n")
+        + "\n\n"
+        + definition
+        + "\n\n"
+        + `export const output = ${call}`
 
-        await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
+      await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
-        const { output } = await import(`${dirname}/.${identifier}.saumon.${extension}`)
+      const { output } = await import(`${dirname}/.${identifier}.saumon.${extension}`)
 
-        let awaited = await Promise.resolve(output)
+      let awaited = await Promise.resolve(output)
 
-        if (typeof awaited === "undefined")
-          awaited = ""
+      if (typeof awaited === "undefined")
+        awaited = ""
 
-        if (typeof awaited !== "string")
-          throw new Error(`Evaluation failed`)
+      if (typeof awaited !== "string")
+        throw new Error(`Evaluation failed`)
 
-        /**
-         * Fill the cache
-         */
-        outputByInput.set(call, awaited)
+      /**
+       * Fill the cache
+       */
+      outputByInput.set(call, awaited)
 
-        /**
-         * Apply
-         */
-        text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
+      /**
+       * Apply
+       */
+      text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
 
-        /**
-         * Restart because the content and indexes changed
-         */
-        restart = true
+      /**
+       * Restart because the content and indexes changed
+       */
+      restart = true
 
-        /**
-         * Clean
-         */
-        await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
-        await fs.rm(`${dirname}/../.${identifier}.saumon`, { recursive: true, force: true })
+      /**
+       * Clean
+       */
+      await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
+      await fs.rm(`${dirname}/../.${identifier}.saumon`, { recursive: true, force: true })
 
-        break
-      }
+      break
     }
 
     if (restart)
