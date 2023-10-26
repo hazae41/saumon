@@ -541,39 +541,41 @@ export async function compile(arg: string) {
         + "\n\n"
         + `export const output = ${call}`
 
-      await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
+      try {
+        await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
-      const { output } = await import(`${dirname}/.${identifier}.saumon.${extension}`)
+        const { output } = await import(`${dirname}/.${identifier}.saumon.${extension}`)
 
-      let awaited = await Promise.resolve(output)
+        let awaited = await Promise.resolve(output)
 
-      if (typeof awaited === "undefined")
-        awaited = ""
+        if (typeof awaited === "undefined")
+          awaited = ""
 
-      if (typeof awaited !== "string")
-        throw new Error(`Evaluation failed`)
+        if (typeof awaited !== "string")
+          throw new Error(`Evaluation failed`)
 
-      /**
-       * Fill the cache
-       */
-      outputByInput.set(call, awaited)
+        /**
+         * Fill the cache
+         */
+        outputByInput.set(call, awaited)
 
-      /**
-       * Apply
-       */
-      text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
+        /**
+         * Apply
+         */
+        text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
 
-      /**
-       * Restart because the content and indexes changed
-       */
-      restart = true
+        /**
+         * Restart because the content and indexes changed
+         */
+        restart = true
 
-      /**
-       * Clean
-       */
-      await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
-
-      break
+        break
+      } finally {
+        /**
+         * Clean
+         */
+        await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
+      }
     }
 
     if (restart)
