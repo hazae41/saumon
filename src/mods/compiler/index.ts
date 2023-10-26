@@ -572,7 +572,6 @@ export async function compile(arg: string) {
        * Clean
        */
       await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
-      await fs.rm(`${dirname}/../.${identifier}.saumon`, { recursive: true, force: true })
 
       break
     }
