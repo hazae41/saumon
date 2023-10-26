@@ -294,127 +294,127 @@ export async function compile(arg: string) {
 
   let text = await fs.readFile(filename, "utf8")
 
-  const imports = new Array<string>()
+  const imports = new Set<string>()
   const outputByInput = new Map<string, string>()
   const definitionByName = new Map<string, string>()
 
-  /**
-   * Process expressions
-   */
-  for (const i = { x: 0 }; i.x < text.length; i.x++) {
+  while (true) {
     /**
-     * Not at the start of an expression
+     * Process expressions
      */
-    if (i.x !== 0 && text[i.x - 1] !== "\n" && text[i.x - 1] !== ";")
-      continue
-
-    let expression = ""
-
-    for (const char of allExpression(text, i))
-      expression += char
-
-    if (expression.trim().startsWith("import ")) {
-      imports.push(expression)
-
+    for (const i = { x: 0 }; i.x < text.length; i.x++) {
       /**
-       * Don't do further checks
+       * Not at the start of an expression
        */
-      continue
-    }
+      if (i.x !== 0 && text[i.x - 1] !== "\n" && text[i.x - 1] !== ";")
+        continue
 
-    {
-      let previous: number | undefined
-      let index: number
+      let expression = ""
 
-      /**
-       * Search all require() calls (even quoted or commented)
-       */
-      while ((index = expression.indexOf("require(", previous)) !== -1) {
-        previous = index
+      for (const char of allExpression(text, i))
+        expression += char
 
-        const i = { x: 0 }
+      if (expression.trim().startsWith("import ")) {
+        imports.add(expression)
 
         /**
-         * Try to find it in unquoted and uncommented code
+         * Don't do further checks
          */
-        for (; i.x < text.length; i.x++) {
-          for (const _ of allIgnored(text, i))
-            continue
-
-          if (i.x < index)
-            continue
-          if (i.x > index)
-            break
-          break
-        }
-
-        /**
-         * Found it in unquoted and uncommented code
-         */
-        if (i.x === index) {
-          imports.push(expression)
-
-          /**
-           * Stop searching
-           */
-          break
-        }
+        continue
       }
 
-      /**
-       * Go to next check
-       */
+      {
+        let previous: number | undefined
+        let index: number
+
+        /**
+         * Search all require() calls (even quoted or commented)
+         */
+        while ((index = expression.indexOf("require(", previous)) !== -1) {
+          previous = index
+
+          const i = { x: 0 }
+
+          /**
+           * Try to find it in unquoted and uncommented code
+           */
+          for (; i.x < text.length; i.x++) {
+            for (const _ of allIgnored(text, i))
+              continue
+
+            if (i.x < index)
+              continue
+            if (i.x > index)
+              break
+            break
+          }
+
+          /**
+           * Found it in unquoted and uncommented code
+           */
+          if (i.x === index) {
+            imports.add(expression)
+
+            /**
+             * Stop searching
+             */
+            break
+          }
+        }
+
+        /**
+         * Go to next check
+         */
+      }
+
+      continue
     }
 
-    continue
-  }
-
-  /**
-   * Process lines
-   */
-  for (const i = { x: 0 }; i.x < text.length; i.x++) {
     /**
-     * Not at the start of a line
+     * Process lines
      */
-    if (i.x !== 0 && text[i.x - 1] !== "\n")
-      continue
+    for (const i = { x: 0 }; i.x < text.length; i.x++) {
+      /**
+       * Not at the start of a line
+       */
+      if (i.x !== 0 && text[i.x - 1] !== "\n")
+        continue
 
-    let line = ""
+      let line = ""
 
-    for (const char of allLine(text, i))
-      line += char
+      for (const char of allLine(text, i))
+        line += char
 
-    if (line.trim().startsWith("* @macro")) {
-      const start = text.lastIndexOf("/**", i.x)
-      const preend = text.indexOf("*/", i.x)
-      const end = text.indexOf("\n", preend)
+      if (line.trim().startsWith("* @macro")) {
+        const start = text.lastIndexOf("/*", i.x)
+        const preend = text.indexOf("*/", i.x)
+        const end = text.indexOf("\n", preend)
 
-      const original = text.slice(start, end)
+        const original = text.slice(start, end)
 
-      const lines = original.split("\n")
+        const lines = original.split("\n")
 
-      let line = 0
+        let line = 0
 
-      delete lines[line++]
-      delete lines[line++]
+        delete lines[line++]
+        delete lines[line++]
 
-      for (; line < lines.length; line++)
-        lines[line] = lines[line].trim().replace("* ", "")
+        for (; line < lines.length; line++)
+          lines[line] = lines[line].trim().replace("* ", "")
 
-      delete lines[line - 1];
+        delete lines[line - 1];
 
-      const modified = lines.filter(it => it != null).join("\n")
+        const modified = lines.filter(it => it != null).join("\n")
 
-      text = Strings.replaceAt(text, original, modified, start, end)
-      i.x = start + modified.length
+        text = Strings.replaceAt(text, original, modified, start, end)
+        i.x = start + modified.length
+
+        continue
+      }
 
       continue
     }
 
-    continue
-  }
-
-  while (true) {
     /**
      * Rematch all in case the previous macro call returned another macro call
      * e.g. $macro1()$ returns "$macro2()"
@@ -535,7 +535,7 @@ export async function compile(arg: string) {
       const definition = definitionByName.get(name) ?? ""
 
       const code = ``
-        + imports.join("\n")
+        + [...imports.values()].join("\n")
         + "\n\n"
         + definition
         + "\n\n"
