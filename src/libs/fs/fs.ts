@@ -12,3 +12,10 @@ export async function* walk(directory: string): AsyncIterable<string> {
     }
   }
 }
+
+export async function find(directory: string, name: string) {
+  for await (const file of walk(directory)) {
+    if (path.basename(file) === name)
+      return file
+  }
+}

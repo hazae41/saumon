@@ -1,4 +1,4 @@
-import { walk } from "libs/walk/walk.js";
+import { walk } from "libs/fs/fs.js";
 import { Worker } from "worker_threads";
 
 const [node, main, command, ...args] = process.argv

@@ -24,8 +24,10 @@
   },
   "devDependencies": {
     "@hazae41/rimraf": "^1.0.1",
+    "@rollup/plugin-typescript": "^11.1.5",
     "@surma/rollup-plugin-off-main-thread": "^2.2.3",
     "@types/node": "^20.8.7",
+    "rollup": "^4.1.4",
     "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-node-externals": "^6.1.2"
   },
@@ -52,11 +54,10 @@
     "asynchronous",
     "browser"
   ],
-  "dependencies": {
-    "@rollup/plugin-typescript": "^11.1.5",
-    "rollup": "^4.1.4"
-  },
   "bin": {
     "saumon": "./dist/cli/index.cli.mjs"
+  },
+  "dependencies": {
+    "typescript": "^5.2.2"
   }
 }

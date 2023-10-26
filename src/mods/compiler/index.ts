@@ -1,7 +1,6 @@
-import ts from "@rollup/plugin-typescript";
 import fs from "fs/promises";
 import path from "path";
-import { rollup } from "rollup";
+import ts from "typescript";
 
 export namespace Strings {
   export function replaceAt(text: string, search: string, replace: string, start: number, end: number) {
@@ -503,54 +502,76 @@ export async function compile(arg: string) {
 
         await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
 
-        const build = await rollup({
-          input: `${dirname}/.${identifier}.saumon.${extension}`,
-          plugins: [(ts as any)()],
-          external: ["tslib"]
-        })
+        let importable: string | undefined
 
-        try {
-          const [chunk] = await build.write({
-            dir: `${dirname}/.${identifier}.saumon/`,
-          }).then(x => x.output)
+        if (extension === "ts" || extension === "tsx") {
+          const program = ts.createProgram([
+            `${dirname}/.${identifier}.saumon.${extension}`
+          ], {
+            module: ts.ModuleKind.NodeNext,
+            moduleResolution: ts.ModuleResolutionKind.NodeNext,
+            outDir: `${dirname}/.${identifier}.saumon/`
+          })
 
-          const entry = path.join(`${dirname}/.${identifier}.saumon/`, chunk.fileName)
+          const preDiagnostics = ts.getPreEmitDiagnostics(program)
+          const { emitSkipped, diagnostics } = program.emit()
+          const allDiagnostics = [...preDiagnostics, ...diagnostics]
 
-          const { output } = await import(entry)
+          for (const diagnostic of allDiagnostics) {
+            const { file, start, messageText } = diagnostic
 
-          let awaited = await Promise.resolve(output)
+            if (file) {
+              const { line, character } = ts.getLineAndCharacterOfPosition(file, start!);
+              const message = ts.flattenDiagnosticMessageText(messageText, "\n");
+              console.warn(`${file.fileName} (${line + 1},${character + 1}): ${message}`);
+            } else {
+              console.warn(ts.flattenDiagnosticMessageText(messageText, "\n"));
+            }
+          }
 
-          if (typeof awaited === "undefined")
-            awaited = ""
+          if (emitSkipped)
+            throw new Error(`Transpilation failed`)
 
-          if (typeof awaited !== "string")
-            throw new Error(`Evaluation failed`)
-
-          /**
-           * Fill the cache
-           */
-          outputByInput.set(call, awaited)
-
-          /**
-           * Apply
-           */
-          text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
-
-          /**
-           * Restart because the content and indexes changed
-           */
-          restart = true
-
-          /**
-           * Clean
-           */
-          await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`)
-          await fs.rm(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
-
-          break
-        } finally {
-          await build.close()
+          importable = `${dirname}/.${identifier}.saumon/.${identifier}.saumon.js`
+        } else {
+          importable = `${dirname}/.${identifier}.saumon.${extension}`
         }
+
+        if (importable == null)
+          throw new Error(`Could not find file`)
+
+        const { output } = await import(importable)
+
+        let awaited = await Promise.resolve(output)
+
+        if (typeof awaited === "undefined")
+          awaited = ""
+
+        if (typeof awaited !== "string")
+          throw new Error(`Evaluation failed`)
+
+        /**
+         * Fill the cache
+         */
+        outputByInput.set(call, awaited)
+
+        /**
+         * Apply
+         */
+        text = Strings.replaceAt(text, call, awaited, match.index, match.index + call.length)
+
+        /**
+         * Restart because the content and indexes changed
+         */
+        restart = true
+
+        /**
+         * Clean
+         */
+        await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
+        await fs.rm(`${dirname}/.${identifier}.saumon`, { recursive: true, force: true })
+
+        break
       }
     }
 
