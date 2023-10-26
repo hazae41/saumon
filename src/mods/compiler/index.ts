@@ -2,6 +2,10 @@ import fs from "fs/promises";
 import path from "path";
 import ts from "typescript";
 
+declare global {
+  const Bun: unknown
+}
+
 export namespace Strings {
   export function replaceAt(text: string, search: string, replace: string, start: number, end: number) {
     return text.slice(0, start) + text.slice(start, end).replace(search, replace) + text.slice(end)
@@ -483,7 +487,7 @@ export async function compile(arg: string) {
       /**
        * Check if CommonJS
        */
-      if (!process.versions.bun && typeof require !== "undefined") {
+      if (typeof Bun === "undefined" && typeof require !== "undefined") {
         throw new Error(`CommonJS not supported yet`)
       } else {
         /**
@@ -504,9 +508,9 @@ export async function compile(arg: string) {
 
         let importable: string | undefined
 
-        console.log(process.versions.bun)
+        console.log(Bun)
 
-        if (!process.versions.bun && extension === "ts" || extension === "tsx") {
+        if (typeof Bun === "undefined" && extension === "ts" || extension === "tsx") {
           const program = ts.createProgram([
             `${dirname}/.${identifier}.saumon.${extension}`
           ], {
