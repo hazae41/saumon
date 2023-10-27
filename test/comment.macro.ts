@@ -10,6 +10,8 @@ class Console {
   /**
    * @macro
    * $commented$()
-   */
+   */ test() {
+    return this
+  }
 
 }

@@ -266,17 +266,18 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
         let line = ""
 
-        const start = i.x
-
         for (const char of allLine(text, i))
           line += char
-
-        const end = i.x
 
         if (line.trim().startsWith("/*")) {
           const lines = line.split("\n")
 
           if (lines[1].trim().startsWith("* @macro")) {
+            const start = text.lastIndexOf("/*", i.x)
+            const end = text.indexOf("*/", start) + 2
+
+            const original = text.slice(start, end)
+
             let index = 0
 
             delete lines[index++]
@@ -289,7 +290,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
             const modified = lines.filter(it => it != null).join("\n")
 
-            text = Strings.replaceAt(text, line, modified, start, end)
+            text = Strings.replaceAt(text, original, modified, start, end)
             i.x = start + modified.length
 
             continue
