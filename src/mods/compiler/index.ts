@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { Index, all, allBlockCommented, isStartBlockCommented } from "libs/char/char.js";
+import { Index, all, allBlockCommented } from "libs/char/char.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
@@ -260,8 +260,8 @@ export async function compile(file: string, options: CompileOptions = {}) {
     {
       const i = { x: 0 }
 
-      for (const _ of all(text, i)) {
-        if (!isStartBlockCommented(text, i))
+      for (const { type } of all(text, i)) {
+        if (type !== "block-commented")
           continue
 
         let comment = ""
