@@ -163,6 +163,6 @@ export function* all(text: string, i: Index): Generator<Char> {
     else if (isLineCommented(text, i))
       yield* allLineCommented(text, i)
     else
-      yield { type: "code", char: text[i.x] }
+      yield { type: "code", char: text[i.x] } as const
   }
 }

@@ -1,30 +1,11 @@
 import fs from "fs/promises";
-import { Index, all, allBlockCommented } from "libs/char/char.js";
+import { Char, all } from "libs/char/char.js";
+import { unclosed } from "libs/iterable/iterable.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
-function* allLine(text: string, i: Index) {
-  for (const { type, char } of all(text, i)) {
-    /**
-     * Only check code
-     */
-    if (type !== "code") {
-      yield char
-      continue
-    }
-
-    /**
-     * Stop at end of line
-     */
-    if (char === "\n")
-      break
-
-    yield char
-  }
-}
-
-function* allExpression(text: string, i: Index) {
-  for (const { type, char } of all(text, i)) {
+function* allExpression(c: Iterable<Char>) {
+  for (const { type, char } of unclosed(c)) {
     /**
      * Only check code
      */
@@ -185,16 +166,17 @@ export async function compile(file: string, options: CompileOptions = {}) {
      */
     {
       const i = { x: 0 }
+      const c = all(text, i)
 
-      for (const { char } of all(text, i)) {
+      for (const { char } of unclosed(c)) {
         if (char === "\n")
           continue
         if (char === ";")
           continue
 
-        let expression = ""
+        let expression = char
 
-        for (const char of allExpression(text, i))
+        for (const char of allExpression(c))
           expression += char
 
         if (expression.trim().startsWith("import ")) {
@@ -259,15 +241,19 @@ export async function compile(file: string, options: CompileOptions = {}) {
      */
     {
       const i = { x: 0 }
+      const c = all(text, i)
 
-      for (const { type } of all(text, i)) {
+      for (const { type, char } of unclosed(c)) {
         if (type !== "block-commented")
           continue
 
-        let comment = ""
+        let comment = char
 
-        for (const { char } of allBlockCommented(text, i))
+        for (const { type, char } of unclosed(c)) {
+          if (type !== "block-commented")
+            break
           comment += char
+        }
 
         const lines = comment.split("\n")
 
