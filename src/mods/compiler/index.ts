@@ -1,185 +1,51 @@
 import fs from "fs/promises";
+import { Index, all } from "libs/char/char.js";
+import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
-export namespace Strings {
-  export function replaceAt(text: string, search: string, replace: string, start: number, end: number) {
-    return text.slice(0, start) + text.slice(start, end).replace(search, replace) + text.slice(end)
-  }
-}
-
-interface Slot {
-  x: number
-}
-
-
-function isQuoted(text: string, i: Slot, quote: string) {
-  return text[i.x] === quote && text[i.x - 1] !== "\\"
-}
-
-function* allDoubleQuoted(text: string, i: Slot) {
-  yield text[i.x]
-  i.x++
-
-  /**
-   * Yield until end
-   */
-  for (; i.x < text.length; i.x++) {
-    // TODO: break on newline
-
-    if (isQuoted(text, i, '"')) {
-      yield text[i.x]
-      i.x++
-      break
-    }
-
-    yield text[i.x]
-  }
-}
-
-function* allSingleQuoted(text: string, i: Slot) {
-  yield text[i.x]
-  i.x++
-
-  /**
-   * Yield until end
-   */
-  for (; i.x < text.length; i.x++) {
-    // TODO: break on newline
-
-    if (isQuoted(text, i, "'")) {
-      yield text[i.x]
-      i.x++
-      break
-    }
-
-    yield text[i.x]
-  }
-}
-
-function* allTemplateQuoted(text: string, i: Slot) {
-  yield text[i.x]
-  i.x++
-
-  /**
-   * Yield until end
-   */
-  for (; i.x < text.length; i.x++) {
-    if (isQuoted(text, i, "`")) {
-      yield text[i.x]
-      i.x++
-      break
-    }
-
-    yield text[i.x]
-  }
-}
-
-function isStartBlockCommented(text: string, i: Slot) {
-  return text.slice(i.x, "/*".length) === "/*"
-}
-
-function isEndBlockCommented(text: string, i: Slot) {
-  return text.slice(i.x, "*/".length) === "*/"
-}
-
-function* allBlockCommented(text: string, i: Slot) {
-  while (isStartBlockCommented(text, i)) {
-    yield text[i.x]
-    i.x++
-
+function* allLine(text: string, i: Index) {
+  for (const { type, char } of all(text, i)) {
     /**
-     * Yield until end
+     * Only check code
      */
-    for (; i.x < text.length; i.x++) {
-      if (isEndBlockCommented(text, i)) {
-        yield text[i.x]
-        i.x++
-        break
-      }
-
-      yield text[i.x]
+    if (type !== "code") {
+      yield char
+      continue
     }
-  }
-}
-
-function isLineCommented(text: string, i: Slot) {
-  return text.slice(i.x, "//".length) === "//"
-}
-
-function* allLineCommented(text: string, i: Slot) {
-  yield text[i.x]
-  i.x++
-
-  /**
-   * Yield until end
-   */
-  for (; i.x < text.length; i.x++) {
-    if (text[i.x] === "\n") {
-      yield text[i.x]
-      i.x++
-      break
-    }
-
-    yield text[i.x]
-  }
-}
-
-function* allIgnored(text: string, i: Slot) {
-  while (true) {
-    if (isQuoted(text, i, "`"))
-      yield* allTemplateQuoted(text, i)
-    else if (isQuoted(text, i, "'"))
-      yield* allSingleQuoted(text, i)
-    else if (isQuoted(text, i, '"'))
-      yield* allDoubleQuoted(text, i)
-    else if (isStartBlockCommented(text, i))
-      yield* allBlockCommented(text, i)
-    else if (isLineCommented(text, i))
-      yield* allLineCommented(text, i)
-    else
-      break
-  }
-}
-
-function* allLine(text: string, i: Slot) {
-  for (; i.x < text.length; i.x++) {
-    /**
-     * Do not check ignored
-     */
-    for (const _ of allIgnored(text, i))
-      yield text[i.x]
 
     /**
      * Stop at end of line
      */
-    if (text[i.x] === "\n")
+    if (char === "\n")
       break
 
-    yield text[i.x]
+    yield char
   }
 }
 
-function* allExpression(text: string, i: Slot) {
-  for (; i.x < text.length; i.x++) {
+function* allExpression(text: string, i: Index) {
+  for (const { type, char } of all(text, i)) {
     /**
-     * Do not check quoted
+     * Only check code
      */
-    for (const _ of allIgnored(text, i))
-      yield text[i.x]
+    if (type !== "code") {
+      yield char
+      continue
+    }
 
     /**
      * Stop at end of line
      */
-    if (text[i.x] === "\n")
+    if (char === "\n")
       break
 
     /**
      * Stop at the end of expression
      */
-    if (text[i.x] === ";")
+    if (char === ";")
       break
 
-    yield text[i.x]
+    yield char
   }
 }
 
@@ -189,34 +55,38 @@ function readCall(text: string, index: number) {
 
   const i = { x: 0 }
 
-  for (; i.x < text.length; i.x++) {
-    for (const _ of allIgnored(text, i))
+  for (const { type } of all(text, i)) {
+    if (type !== "code")
       continue
 
     if (i.x < index)
       continue
     if (i.x > index)
-      return
+      break
     break
   }
 
-  for (; i.x < text.length; i.x++) {
+  if (i.x !== index)
+    return
+
+  for (const { type, char } of all(text, i)) {
     /**
      * Do not check quoted
      */
-    for (const _ of allIgnored(text, i))
-      call += text[i.x]
+    if (type !== "code") {
+      call += char
+      continue
+    }
 
-    call += text[i.x]
+    call += char
 
-    if (text[i.x] === "(") {
+    if (char === "(") {
       depth++
       continue
     }
 
-    if (text[i.x] === ")") {
+    if (char === ")") {
       depth--
-
       if (depth === 0)
         break
       continue
@@ -226,7 +96,7 @@ function readCall(text: string, index: number) {
   }
 
   if (depth !== 0)
-    throw new Error(`Unfinished call`)
+    throw new Error(`Unfinished call ${call}`)
 
   return call
 }
@@ -237,32 +107,37 @@ function readBlock(text: string, index: number) {
 
   const i = { x: 0 }
 
-  for (; i.x < text.length; i.x++) {
-    for (const _ of allIgnored(text, i))
+  for (const { type } of all(text, i)) {
+    if (type !== "code")
       continue
 
     if (i.x < index)
       continue
     if (i.x > index)
-      return
+      break
     break
   }
 
-  for (; i.x < text.length; i.x++) {
+  if (i.x !== index)
+    return
+
+  for (const { type, char } of all(text, i)) {
     /**
      * Do not check quoted
      */
-    for (const _ of allIgnored(text, i))
-      call += text[i.x]
+    if (type !== "code") {
+      call += char
+      continue
+    }
 
-    call += text[i.x]
+    call += char
 
-    if (text[i.x] === "{") {
+    if (char === "{") {
       depth++
       continue
     }
 
-    if (text[i.x] === "}") {
+    if (char === "}") {
       depth--
 
       if (depth === 0)
@@ -308,117 +183,121 @@ export async function compile(file: string, options: CompileOptions = {}) {
     /**
      * Process expressions
      */
-    for (const i = { x: 0 }; i.x < text.length; i.x++) {
-      /**
-       * Not at the start of an expression
-       */
-      if (i.x !== 0 && text[i.x - 1] !== "\n" && text[i.x - 1] !== ";")
-        continue
+    {
+      const i = { x: 0 }
 
-      let expression = ""
+      for (const { char } of all(text, i)) {
+        if (char === "\n")
+          continue
+        if (char === ";")
+          continue
 
-      for (const char of allExpression(text, i))
-        expression += char
+        let expression = ""
 
-      if (expression.trim().startsWith("import ")) {
-        imports.add(expression)
+        for (const char of allExpression(text, i))
+          expression += char
 
-        /**
-         * Don't do further checks
-         */
-        continue
-      }
-
-      {
-        let previous: number | undefined
-        let index: number
-
-        /**
-         * Search all require() calls (even quoted or commented)
-         */
-        while ((index = expression.indexOf("require(", previous)) !== -1) {
-          previous = index
-
-          const i = { x: 0 }
+        if (expression.trim().startsWith("import ")) {
+          imports.add(expression)
 
           /**
-           * Try to find it in unquoted and uncommented code
+           * Don't do further checks
            */
-          for (; i.x < text.length; i.x++) {
-            for (const _ of allIgnored(text, i))
-              continue
-
-            if (i.x < index)
-              continue
-            if (i.x > index)
-              break
-            break
-          }
-
-          /**
-           * Found it in unquoted and uncommented code
-           */
-          if (i.x === index) {
-            imports.add(expression)
-
-            /**
-             * Stop searching
-             */
-            break
-          }
+          continue
         }
 
-        /**
-         * Go to next check
-         */
-      }
+        {
+          let previous: number | undefined
+          let index: number
 
-      continue
+          /**
+           * Search all require() calls (even quoted or commented)
+           */
+          while ((index = expression.indexOf("require(", previous)) !== -1) {
+            previous = index
+
+            const i = { x: 0 }
+
+            /**
+             * Try to find it in unquoted and uncommented code
+             */
+            for (const { type } of all(text, i)) {
+              if (type !== "code")
+                continue
+
+              if (i.x < index)
+                continue
+              if (i.x > index)
+                break
+              break
+            }
+
+            /**
+             * Found it in unquoted and uncommented code
+             */
+            if (i.x === index) {
+              imports.add(expression)
+
+              /**
+               * Stop searching
+               */
+              break
+            }
+          }
+
+          /**
+           * Go to next check
+           */
+        }
+
+        continue
+      }
     }
 
     /**
      * Process lines
      */
-    for (const i = { x: 0 }; i.x < text.length; i.x++) {
-      /**
-       * Not at the start of a line
-       */
-      if (i.x !== 0 && text[i.x - 1] !== "\n")
-        continue
+    {
+      const i = { x: 0 }
 
-      let line = ""
+      for (const { char } of all(text, i)) {
+        if (char === "\n")
+          continue
 
-      for (const char of allLine(text, i))
-        line += char
+        let line = ""
 
-      if (line.trim().startsWith("* @macro")) {
-        const start = text.lastIndexOf("/*", i.x)
-        const preend = text.indexOf("*/", i.x)
-        const end = text.indexOf("\n", preend)
+        const start = i.x
 
-        const original = text.slice(start, end)
+        for (const char of allLine(text, i))
+          line += char
 
-        const lines = original.split("\n")
+        const end = i.x
 
-        let line = 0
+        if (line.trim().startsWith("/*")) {
+          const lines = line.split("\n")
 
-        delete lines[line++]
-        delete lines[line++]
+          if (lines[1].trim().startsWith("* @macro")) {
+            let index = 0
 
-        for (; line < lines.length; line++)
-          lines[line] = lines[line].trim().replace("* ", "")
+            delete lines[index++]
+            delete lines[index++]
 
-        delete lines[line - 1];
+            for (; index < lines.length; index++)
+              lines[index] = lines[index].replace("* ", "")
 
-        const modified = lines.filter(it => it != null).join("\n")
+            delete lines[index - 1];
 
-        text = Strings.replaceAt(text, original, modified, start, end)
-        i.x = start + modified.length
+            const modified = lines.filter(it => it != null).join("\n")
+
+            text = Strings.replaceAt(text, line, modified, start, end)
+            i.x = start + modified.length
+
+            continue
+          }
+        }
 
         continue
       }
-
-      continue
     }
 
     /**

@@ -10,6 +10,7 @@ npm i @hazae41/saumon
 
 ## Goals
 - Ultra simple and minimalist
+- Ultra fast thanks to [Bun](https://bun.sh)
 - Won't interfere with your existing tools
 - Can output arbitrary code (TypeScript types, JSX components, JSON data)
 - Resistant to supply-chain attacks
@@ -37,6 +38,8 @@ console.log("hello world")
 A macro is like a regular JS function, but the preprocessor will replace all its calls by the string value it returns
 
 ### CLI
+
+You need to install [Bun](https://bun.sh)
 
 You can transform a single file
 
