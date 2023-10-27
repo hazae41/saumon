@@ -4,6 +4,26 @@ import { unclosed } from "libs/iterable/iterable.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
+function* allLine(c: Iterable<Char>) {
+  for (const { type, char } of unclosed(c)) {
+    /**
+     * Only check code
+     */
+    if (type !== "code") {
+      yield char
+      continue
+    }
+
+    /**
+     * Stop at end of line
+     */
+    if (char === "\n")
+      break
+
+    yield char
+  }
+}
+
 function* allExpression(c: Iterable<Char>) {
   for (const { type, char } of unclosed(c)) {
     /**
@@ -257,7 +277,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
         const lines = comment.split("\n")
 
-        if (lines[1].trim().startsWith("* @macro")) {
+        if (lines[1].trim().startsWith("* @macro uncomment")) {
           const start = text.lastIndexOf("/*", i.x)
           const end = text.indexOf("*/", start) + 2
 
@@ -277,6 +297,22 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
           text = Strings.replaceAt(text, original, modified, start, end)
           i.x = start + modified.length
+
+          continue
+        }
+
+        if (lines[1].trim().startsWith("* @macro delete-next-lines")) {
+          const start = text.lastIndexOf("/*", i.x)
+          const preend = text.indexOf("\n\n", i.x + 1)
+
+          const end = preend === -1
+            ? text.length
+            : preend + 2
+
+          const original = text.slice(start, end)
+
+          text = Strings.replaceAt(text, original, "", start, end)
+          i.x = start
 
           continue
         }

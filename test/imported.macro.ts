@@ -7,7 +7,7 @@ function $random$() {
 lol`; import { $imported$ } from "./macros/imported.js";
 
 /**
- * @macro
+ * @macro uncomment
  * $imported$(`hello
  * world`)
  */

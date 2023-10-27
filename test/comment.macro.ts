@@ -8,7 +8,7 @@ function $commented$() {
 class Console {
 
   /**
-   * @macro
+   * @macro uncomment
    * $commented$()
    */ test() {
     return this

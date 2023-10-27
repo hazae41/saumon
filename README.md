@@ -145,9 +145,36 @@ $log$("hello from the main file")
 
 ### Comment blocks
 
-#### You can call a macro everywhere with comment blocks
+All comment blocks must start with `/*` or `/**` in the first line and `@macro` in the second line, and end with `*/`
 
-All comment blocks must start with `/**` in the first line and `@macro` in the second line, and end with `*/`
+#### You can also inject arbitrary code in the comment block
+
+This instruction will uncomment the given code and reparse the file
+
+`enabled.macro.ts``
+
+```ts
+const enabled = true
+
+/**
+ * @macro uncomment
+ * if (!enabled) {
+ *   return exit(0)
+ * }
+ */
+```
+
+`enabled.ts`
+
+```ts
+const enabled = true
+
+if (!enabled) {
+   return exit(0)
+}
+```
+
+You can use it to run macros in places where you are not supposed to call functions
 
 `something.macro.ts`
 
@@ -161,7 +188,7 @@ function $log$(x: string) {
 class Something {
 
   /**
-   * @macro 
+   * @macro uncomment
    * $log$("hello world")
    */
 
@@ -180,17 +207,32 @@ class Something {
 }
 ```
 
-#### You can also inject arbitrary code in the comment block
+#### You can delete lines
+
+This instruction will delete all the lines next to it until `\n\n` (or end of file)
 
 ```ts
-const enabled = true
-
 /**
- * @macro
- * if (!enabled) {
- *   return $exit$(0)
- * }
+ * @macro delete-next-lines
  */
+console.log("i will be deleted")
+console.log("i will be deleted too")
+```
+
+You can use it to clean imports that are only used in macros
+
+```ts
+/**
+ * @macro delete-next-lines
+ */
+import { $log$ } from "./macros/log.ts"
+import { $hello$ } from "./macros/hello.ts"
+
+$log$($hello$())
+```
+
+```ts
+console.log("hello world")
 ```
 
 ### Generic
