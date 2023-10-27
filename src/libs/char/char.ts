@@ -109,7 +109,7 @@ function isStartBlockCommented(text: string, i: Index) {
 }
 
 function isEndBlockCommented(text: string, i: Index) {
-  return text.slice(i.x, i.x + "*/".length) === "*/"
+  return text.slice(i.x + 1 - "*/".length, i.x + 1) === "*/"
 }
 
 function* allBlockCommented(text: string, i: Index): Generator<BlockCommentedChar> {
@@ -143,10 +143,8 @@ function* allLineCommented(text: string, i: Index): Generator<LineCommentedChar>
    * Yield until end
    */
   for (; i.x < text.length; i.x++) {
-    if (text[i.x] === "\n") {
-      yield { type, char: text[i.x] }
+    if (text[i.x] === "\n")
       break
-    }
 
     yield { type, char: text[i.x] }
   }

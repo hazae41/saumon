@@ -15,5 +15,5 @@ lol`; import { $imported$ } from "./macros/imported.js";
 it works {
 
   lol
-  $imported("lol")
+  $imported$("lol")
 }`)

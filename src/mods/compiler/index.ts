@@ -285,7 +285,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
             for (; index < lines.length; index++)
               lines[index] = lines[index].replace("* ", "")
 
-            delete lines[index - 1];
+            delete lines[index - 1]
 
             const modified = lines.filter(it => it != null).join("\n")
 
