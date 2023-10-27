@@ -104,15 +104,15 @@ function* allTemplateQuoted(text: string, i: Index): Generator<TemplateQuotedCha
   }
 }
 
-function isStartBlockCommented(text: string, i: Index) {
+export function isStartBlockCommented(text: string, i: Index) {
   return text.slice(i.x, i.x + "/*".length) === "/*"
 }
 
-function isEndBlockCommented(text: string, i: Index) {
+export function isEndBlockCommented(text: string, i: Index) {
   return text.slice(i.x + 1 - "*/".length, i.x + 1) === "*/"
 }
 
-function* allBlockCommented(text: string, i: Index): Generator<BlockCommentedChar> {
+export function* allBlockCommented(text: string, i: Index): Generator<BlockCommentedChar> {
   const type = "block-commented"
   yield { type, char: text[i.x] }
   i.x++

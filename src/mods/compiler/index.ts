@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { Index, all } from "libs/char/char.js";
+import { Index, all, allBlockCommented, isStartBlockCommented } from "libs/char/char.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
@@ -255,49 +255,45 @@ export async function compile(file: string, options: CompileOptions = {}) {
     }
 
     /**
-     * Process lines
+     * Process comments
      */
     {
       const i = { x: 0 }
 
-      for (const { char } of all(text, i)) {
-        if (char === "\n")
+      for (const _ of all(text, i)) {
+        if (!isStartBlockCommented(text, i))
           continue
 
-        let line = ""
+        let comment = ""
 
-        for (const char of allLine(text, i))
-          line += char
+        for (const { char } of allBlockCommented(text, i))
+          comment += char
 
-        if (line.trim().startsWith("/*")) {
-          const lines = line.split("\n")
+        const lines = comment.split("\n")
 
-          if (lines[1].trim().startsWith("* @macro")) {
-            const start = text.lastIndexOf("/*", i.x)
-            const end = text.indexOf("*/", start) + 2
+        if (lines[1].trim().startsWith("* @macro")) {
+          const start = text.lastIndexOf("/*", i.x)
+          const end = text.indexOf("*/", start) + 2
 
-            const original = text.slice(start, end)
+          const original = text.slice(start, end)
 
-            let index = 0
+          let index = 0
 
-            delete lines[index++]
-            delete lines[index++]
+          delete lines[index++]
+          delete lines[index++]
 
-            for (; index < lines.length; index++)
-              lines[index] = lines[index].replace("* ", "")
+          for (; index < lines.length; index++)
+            lines[index] = lines[index].replace("* ", "")
 
-            delete lines[index - 1]
+          delete lines[index - 1]
 
-            const modified = lines.filter(it => it != null).join("\n")
+          const modified = lines.filter(it => it != null).join("\n")
 
-            text = Strings.replaceAt(text, original, modified, start, end)
-            i.x = start + modified.length
+          text = Strings.replaceAt(text, original, modified, start, end)
+          i.x = start + modified.length
 
-            continue
-          }
+          continue
         }
-
-        continue
       }
     }
 
