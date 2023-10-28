@@ -1,1 +1,4 @@
-console.log(123)
+)` as any
+}
+
+$log$(123)

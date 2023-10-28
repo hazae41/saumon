@@ -65,22 +65,38 @@ function* allTemplateQuoted(text: string, i: Index): Generator<CharType> {
    * Yield until end
    */
   for (; i.x < text.length; i.x++) {
-    // if (text[i.x] === "$" && text[i.x + 1] === "{") {
-    //   yield type
-    //   yield type
+    if (text[i.x] === "$" && text[i.x - 1] !== "\\" && text[i.x + 1] === "{") {
+      yield type
+      i.x++
+      yield type
+      i.x++
 
-    //   for (const type of allTyped(text, i)) {
-    //     yield type
+      let depth = 1
 
-    //     if (type !== "code")
-    //       continue
-    //     if (text[i.x] === "}")
-    //       break
-    //     continue
-    //   }
+      for (const type of allTyped(text, i)) {
+        yield type
 
-    //   continue
-    // }
+        if (type !== "code")
+          continue
+
+        if (text[i.x] === "{") {
+          depth++
+          continue
+        }
+
+        if (text[i.x] === "}") {
+          depth--
+
+          if (depth === 0)
+            break
+          continue
+        }
+
+        continue
+      }
+
+      continue
+    }
 
     if (isQuoted(text, i, "`")) {
       yield type

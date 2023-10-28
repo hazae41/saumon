@@ -1,1 +1,4 @@
-const x = 0.07607076668629331 * 100
+` as any
+}
+
+const x = $random$() * 100
