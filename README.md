@@ -21,6 +21,22 @@ const data = $run$(() => fetch("/api/data").then(r => r.json()))
 
 ## Example
 
+### Compile-time code evaluation
+
+Input: `data.macro.ts`
+
+```tsx
+const data = $run$(() => fetch("/api/data").then(r => r.json()))
+```
+
+Output: `data.ts`
+
+```tsx
+const data = { ... }
+```
+
+### Compile-time code generation
+
 `log.macro.ts`
 
 ```ts
