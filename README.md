@@ -6,6 +6,10 @@ Ultra simple macro system for TypeScript
 npm i @hazae41/saumon
 ```
 
+```tsx
+const data = $run$(() => fetch("/api/data").then(r => r.json()))
+```
+
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
 
 ## Goals
@@ -282,7 +286,7 @@ export const data = $fetch$<{ id: number }>("https://dummyjson.com/products/1")
 export const data = { "id": 1 }
 ```
 
-#### You can await macroed code
+#### You can also await macroed code
 
 ```ts
 function $f$(): Promise<number> {
@@ -290,6 +294,22 @@ function $f$(): Promise<number> {
 }
 
 await $f$()
+```
+
+### Dynamic
+
+You can run dynamic code thanks to callbacks
+
+```tsx
+function $run$<T>(callback: () => T): Awaited<T> {
+  return (async () => {
+    return JSON.stringify(await callback())
+  })() as any
+}
+```
+
+```tsx
+const data = $run$(() => fetch("/api/data").then(r => r.json()))
 ```
 
 ### Constraints on in-file macro calls
