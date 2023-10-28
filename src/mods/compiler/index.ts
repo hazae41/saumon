@@ -1,52 +1,52 @@
 import fs from "fs/promises";
-import { Char, all } from "libs/char/char.js";
+import { CharType, Index, allTyped } from "libs/char/char.js";
 import { unclosed } from "libs/iterable/iterable.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
-function* allLine(c: Iterable<Char>) {
-  for (const { type, char } of unclosed(c)) {
+function* allLine(text: string, i: Index, c: Iterable<CharType>) {
+  for (const type of unclosed(c)) {
     /**
      * Only check code
      */
     if (type !== "code") {
-      yield char
+      yield text[i.x]
       continue
     }
 
     /**
      * Stop at end of line
      */
-    if (char === "\n")
+    if (text[i.x] === "\n")
       break
 
-    yield char
+    yield text[i.x]
   }
 }
 
-function* allExpression(c: Iterable<Char>) {
-  for (const { type, char } of unclosed(c)) {
+function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
+  for (const type of unclosed(c)) {
     /**
      * Only check code
      */
     if (type !== "code") {
-      yield char
+      yield text[i.x]
       continue
     }
 
     /**
      * Stop at end of line
      */
-    if (char === "\n")
+    if (text[i.x] === "\n")
       break
 
     /**
      * Stop at the end of expression
      */
-    if (char === ";")
+    if (text[i.x] === ";")
       break
 
-    yield char
+    yield text[i.x]
   }
 }
 
@@ -56,7 +56,7 @@ function readCall(text: string, index: number) {
 
   const i = { x: 0 }
 
-  for (const { type } of all(text, i)) {
+  for (const type of allTyped(text, i)) {
     if (type !== "code")
       continue
 
@@ -70,23 +70,23 @@ function readCall(text: string, index: number) {
   if (i.x !== index)
     return
 
-  for (const { type, char } of all(text, i)) {
+  for (const type of allTyped(text, i)) {
     /**
      * Do not check quoted
      */
     if (type !== "code") {
-      call += char
+      call += text[i.x]
       continue
     }
 
-    call += char
+    call += text[i.x]
 
-    if (char === "(") {
+    if (text[i.x] === "(") {
       depth++
       continue
     }
 
-    if (char === ")") {
+    if (text[i.x] === ")") {
       depth--
       if (depth === 0)
         break
@@ -108,7 +108,7 @@ function readBlock(text: string, index: number) {
 
   const i = { x: 0 }
 
-  for (const { type } of all(text, i)) {
+  for (const type of allTyped(text, i)) {
     if (type !== "code")
       continue
 
@@ -122,23 +122,23 @@ function readBlock(text: string, index: number) {
   if (i.x !== index)
     return
 
-  for (const { type, char } of all(text, i)) {
+  for (const type of allTyped(text, i)) {
     /**
      * Do not check quoted
      */
     if (type !== "code") {
-      call += char
+      call += text[i.x]
       continue
     }
 
-    call += char
+    call += text[i.x]
 
-    if (char === "{") {
+    if (text[i.x] === "{") {
       depth++
       continue
     }
 
-    if (char === "}") {
+    if (text[i.x] === "}") {
       depth--
 
       if (depth === 0)
@@ -186,17 +186,17 @@ export async function compile(file: string, options: CompileOptions = {}) {
      */
     {
       const i = { x: 0 }
-      const c = all(text, i)
+      const c = allTyped(text, i)
 
-      for (const { char } of unclosed(c)) {
-        if (char === "\n")
+      for (const type of unclosed(c)) {
+        if (text[i.x] === "\n")
           continue
-        if (char === ";")
+        if (text[i.x] === ";")
           continue
 
-        let expression = char
+        let expression = text[i.x]
 
-        for (const char of allExpression(c))
+        for (const char of allExpression(text, i, c))
           expression += char
 
         if (expression.trim().startsWith("import ")) {
@@ -223,7 +223,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
             /**
              * Try to find it in unquoted and uncommented code
              */
-            for (const { type } of all(text, i)) {
+            for (const type of allTyped(text, i)) {
               if (type !== "code")
                 continue
 
@@ -261,18 +261,18 @@ export async function compile(file: string, options: CompileOptions = {}) {
      */
     {
       const i = { x: 0 }
-      const c = all(text, i)
+      const c = allTyped(text, i)
 
-      for (const { type, char } of unclosed(c)) {
+      for (const type of unclosed(c)) {
         if (type !== "block-commented")
           continue
 
-        let comment = char
+        let comment = text[i.x]
 
-        for (const { type, char } of unclosed(c)) {
+        for (const type of unclosed(c)) {
           if (type !== "block-commented")
             break
-          comment += char
+          comment += text[i.x]
         }
 
         const lines = comment.split("\n")
