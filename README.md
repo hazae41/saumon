@@ -6,10 +6,6 @@ Ultra simple macro system for TypeScript
 npm i @hazae41/saumon
 ```
 
-```tsx
-const data = $run$(() => fetch("/api/data").then(r => r.json()))
-```
-
 [**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
 
 ## Goals
