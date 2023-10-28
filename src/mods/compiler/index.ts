@@ -4,26 +4,6 @@ import { unclosed } from "libs/iterable/iterable.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
-function* allLine(text: string, i: Index, c: Iterable<CharType>) {
-  for (const type of unclosed(c)) {
-    /**
-     * Only check code
-     */
-    if (type !== "code") {
-      yield text[i.x]
-      continue
-    }
-
-    /**
-     * Stop at end of line
-     */
-    if (text[i.x] === "\n")
-      break
-
-    yield text[i.x]
-  }
-}
-
 function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
   for (const type of unclosed(c)) {
     /**
