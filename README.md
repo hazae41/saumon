@@ -19,13 +19,13 @@ npm i @hazae41/saumon
 
 ### Compile-time code evaluation
 
-Input: `data.macro.ts`
+`data.macro.ts` input
 
 ```tsx
 const data = $run$(() => fetch("/api/data").then(r => r.json()))
 ```
 
-Output: `data.ts`
+`data.ts` output
 
 ```tsx
 const data = { ... }
@@ -33,7 +33,7 @@ const data = { ... }
 
 ### Compile-time code generation
 
-`log.macro.ts`
+`log.macro.ts` input
 
 ```ts
 function $log$(x: string) {
@@ -43,7 +43,7 @@ function $log$(x: string) {
 $log$("hello world")
 ```
 
-`log.ts`
+`log.ts` output
 
 ```ts
 console.log("hello world")
