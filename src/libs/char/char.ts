@@ -1,5 +1,12 @@
+import { unclosed } from "libs/iterable/iterable.js"
+
 export interface Index {
   x: number
+}
+
+export function* raw(text: string, i: Index) {
+  for (; i.x < text.length; i.x++)
+    yield
 }
 
 export type CharType =
@@ -14,15 +21,14 @@ function isQuoted(text: string, i: Index, quote: string) {
   return text[i.x] === quote && text[i.x - 1] !== "\\"
 }
 
-function* allDoubleQuoted(text: string, i: Index): Generator<"double-quoted"> {
+function* allDoubleQuoted(text: string, i: Index, r: Iterable<void>): Generator<"double-quoted"> {
   const type = "double-quoted"
   yield type
-  i.x++
 
   /**
    * Yield until end
    */
-  for (; i.x < text.length; i.x++) {
+  for (const _ of unclosed(r)) {
     if (text[i.x] === "\n")
       break
 
@@ -35,15 +41,14 @@ function* allDoubleQuoted(text: string, i: Index): Generator<"double-quoted"> {
   }
 }
 
-function* allSingleQuoted(text: string, i: Index): Generator<"single-quoted"> {
+function* allSingleQuoted(text: string, i: Index, r: Iterable<void>): Generator<"single-quoted"> {
   const type = "single-quoted"
   yield type
-  i.x++
 
   /**
    * Yield until end
    */
-  for (; i.x < text.length; i.x++) {
+  for (const _ of unclosed(r)) {
     if (text[i.x] === "\n")
       break
 
@@ -56,31 +61,30 @@ function* allSingleQuoted(text: string, i: Index): Generator<"single-quoted"> {
   }
 }
 
-function* allTemplateQuoted(text: string, i: Index): Generator<CharType> {
+function* allTemplateQuoted(text: string, i: Index, r: Iterable<void>): Generator<CharType> {
   const type = "template-quoted"
   yield type
-  i.x++
 
   /**
    * Yield until end
    */
-  for (; i.x < text.length; i.x++) {
+  for (const _ of unclosed(r)) {
     if (text[i.x] === "$" && text[i.x - 1] !== "\\" && text[i.x + 1] === "{") {
       yield type
       i.x++
       yield type
-      i.x++
 
       let depth = 1
 
-      for (const type of allTyped(text, i)) {
-        yield type
-
-        if (type !== "code")
+      for (const type of typed(text, i, r)) {
+        if (type !== "code") {
+          yield type
           continue
+        }
 
         if (text[i.x] === "{") {
           depth++
+          yield type
           continue
         }
 
@@ -89,12 +93,16 @@ function* allTemplateQuoted(text: string, i: Index): Generator<CharType> {
 
           if (depth === 0)
             break
+
+          yield type
           continue
         }
 
+        yield type
         continue
       }
 
+      yield type
       continue
     }
 
@@ -115,15 +123,14 @@ export function isEndBlockCommented(text: string, i: Index) {
   return text.slice(i.x + 1 - "*/".length, i.x + 1) === "*/"
 }
 
-export function* allBlockCommented(text: string, i: Index): Generator<"block-commented"> {
+export function* allBlockCommented(text: string, i: Index, r: Iterable<void>): Generator<"block-commented"> {
   const type = "block-commented"
   yield type
-  i.x++
 
   /**
    * Yield until end
    */
-  for (; i.x < text.length; i.x++) {
+  for (const _ of unclosed(r)) {
     if (isEndBlockCommented(text, i)) {
       yield type
       break
@@ -137,15 +144,14 @@ function isLineCommented(text: string, i: Index) {
   return text.slice(i.x, i.x + "//".length) === "//"
 }
 
-function* allLineCommented(text: string, i: Index): Generator<"line-commented"> {
+function* allLineCommented(text: string, i: Index, r: Iterable<void>): Generator<"line-commented"> {
   const type = "line-commented"
   yield type
-  i.x++
 
   /**
    * Yield until end
    */
-  for (; i.x < text.length; i.x++) {
+  for (const _ of unclosed(r)) {
     if (text[i.x] === "\n")
       break
 
@@ -153,23 +159,18 @@ function* allLineCommented(text: string, i: Index): Generator<"line-commented"> 
   }
 }
 
-export function* allRaw(text: string, i: Index) {
-  for (; i.x < text.length; i.x++)
-    yield
-}
-
-export function* allTyped(text: string, i: Index): Generator<CharType> {
-  for (; i.x < text.length; i.x++) {
+export function* typed(text: string, i: Index, r: Iterable<void>): Generator<CharType> {
+  for (const _ of unclosed(r)) {
     if (isQuoted(text, i, "`"))
-      yield* allTemplateQuoted(text, i)
+      yield* allTemplateQuoted(text, i, r)
     else if (isQuoted(text, i, "'"))
-      yield* allSingleQuoted(text, i)
+      yield* allSingleQuoted(text, i, r)
     else if (isQuoted(text, i, '"'))
-      yield* allDoubleQuoted(text, i)
+      yield* allDoubleQuoted(text, i, r)
     else if (isStartBlockCommented(text, i))
-      yield* allBlockCommented(text, i)
+      yield* allBlockCommented(text, i, r)
     else if (isLineCommented(text, i))
-      yield* allLineCommented(text, i)
+      yield* allLineCommented(text, i, r)
     else
       yield "code"
   }

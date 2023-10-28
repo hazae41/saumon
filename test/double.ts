@@ -1,8 +1,1 @@
-)`
-}
-
-function $two$() {
-  return `${JSON.stringify(crypto.randomUUID())}`
-}
-
-$one$($two$())
+console.log("621981ea-b5fa-433c-bd44-97ff0b854885")

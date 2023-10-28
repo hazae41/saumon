@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { CharType, Index, allTyped } from "libs/char/char.js";
+import { CharType, Index, raw, typed } from "libs/char/char.js";
 import { unclosed } from "libs/iterable/iterable.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
@@ -30,7 +30,7 @@ function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
      * Only check code
      */
     if (type !== "code") {
-      yield text[i.x]
+      yield
       continue
     }
 
@@ -46,7 +46,7 @@ function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
     if (text[i.x] === ";")
       break
 
-    yield text[i.x]
+    yield
   }
 }
 
@@ -55,22 +55,13 @@ function readCall(text: string, index: number) {
   let depth = 0
 
   const i = { x: 0 }
+  const r = raw(text, i)
 
-  for (const type of allTyped(text, i)) {
-    if (type !== "code")
-      continue
-
+  for (const type of typed(text, i, r)) {
     if (i.x < index)
       continue
-    if (i.x > index)
-      break
-    break
-  }
-
-  if (i.x !== index)
-    return
-
-  for (const type of allTyped(text, i)) {
+    if (i.x === index && type !== "code")
+      return
     /**
      * Do not check quoted
      */
@@ -107,22 +98,14 @@ function readBlock(text: string, index: number) {
   let depth = 0
 
   const i = { x: 0 }
+  const r = raw(text, i)
 
-  for (const type of allTyped(text, i)) {
-    if (type !== "code")
-      continue
-
+  for (const type of typed(text, i, r)) {
     if (i.x < index)
       continue
-    if (i.x > index)
-      break
-    break
-  }
+    if (i.x === index && type !== "code")
+      return
 
-  if (i.x !== index)
-    return
-
-  for (const type of allTyped(text, i)) {
     /**
      * Do not check quoted
      */
@@ -186,9 +169,10 @@ export async function compile(file: string, options: CompileOptions = {}) {
      */
     {
       const i = { x: 0 }
-      const c = allTyped(text, i)
+      const r = raw(text, i)
+      const c = typed(text, i, r)
 
-      for (const type of unclosed(c)) {
+      for (const _ of unclosed(c)) {
         if (text[i.x] === "\n")
           continue
         if (text[i.x] === ";")
@@ -196,8 +180,8 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
         let expression = text[i.x]
 
-        for (const char of allExpression(text, i, c))
-          expression += char
+        for (const _ of allExpression(text, i, c))
+          expression += text[i.x]
 
         if (expression.trim().startsWith("import ")) {
           imports.add(expression)
@@ -219,11 +203,12 @@ export async function compile(file: string, options: CompileOptions = {}) {
             previous = index
 
             const i = { x: 0 }
+            const r = raw(text, i)
 
             /**
              * Try to find it in unquoted and uncommented code
              */
-            for (const type of allTyped(text, i)) {
+            for (const type of typed(text, i, r)) {
               if (type !== "code")
                 continue
 
@@ -261,7 +246,8 @@ export async function compile(file: string, options: CompileOptions = {}) {
      */
     {
       const i = { x: 0 }
-      const c = allTyped(text, i)
+      const r = raw(text, i)
+      const c = typed(text, i, r)
 
       for (const type of unclosed(c)) {
         if (type !== "block-commented")
