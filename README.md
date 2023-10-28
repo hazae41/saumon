@@ -324,6 +324,12 @@ function $run$<T>(callback: () => T): Awaited<T> {
 const data = $run$(() => fetch("/api/data").then(r => r.json()))
 ```
 
+For your convenience, Saumon exports the $run$ macro so you can just import it
+
+```tsx
+import { $run$ } from "@hazae41/saumon"
+```
+
 ### Constraints on in-file macro calls
 
 Those constraints only apply when calling in-file macros, not when calling imported macros
