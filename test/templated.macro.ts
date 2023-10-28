@@ -1,3 +1,5 @@
-import { $imported$ } from "./macros/imported.js";
+import { $debug$ } from "./macros/debug.js";
 
-$imported$(`${$imported$({ "hello": "world" })}`)
+$debug$(`test {
+  ${$debug$({ "hello": "world" })}
+}`)

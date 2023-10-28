@@ -1,3 +1,3 @@
-import { $imported$ } from "./macros/imported.js";
+import { $debug$ } from "./macros/debug.js";
 
-console.log("console.log({\"hello\":\"world\"})")
+console.debug("test {\n  console.debug({\"hello\":\"world\"})\n}")
