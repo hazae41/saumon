@@ -167,7 +167,7 @@ All comment blocks must start with `/*` or `/**` in the first line and `@macro` 
 
 This instruction will uncomment the given code and reparse the file
 
-`enabled.macro.ts``
+`enabled.macro.ts`
 
 ```ts
 const enabled = true
