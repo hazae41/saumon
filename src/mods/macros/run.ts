@@ -2,7 +2,7 @@ export interface RunOptions {
   readonly space?: number
 }
 
-export function $run$<T>(callback: () => T, options: RunOptions): Awaited<T> {
+export function $run$<T>(callback: () => T, options: RunOptions = {}): Awaited<T> {
   const { space = 2 } = options
 
   return (async () => {
