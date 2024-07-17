@@ -1,3 +1,5 @@
+declare function $run$<T>(callback: () => T): Awaited<T>
+
 const data = {
   "id": 1,
   "title": "Essence Mascara Lash Princess",

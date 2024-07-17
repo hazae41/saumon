@@ -418,6 +418,8 @@ export async function compile(file: string, options: CompileOptions = {}) {
       const code = ``
         + `function $raw$(text) { return text }`
         + "\n\n"
+        + `function $run$(callback, options = {}) { const { space = 2 } = options; return (async () => JSON.stringify(await callback(), undefined, space))() }`
+        + "\n\n"
         + [...imports.values()].join("\n")
         + "\n\n"
         + definition
