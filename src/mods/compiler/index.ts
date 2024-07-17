@@ -289,7 +289,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
      * Rematch all in case the previous macro call returned another macro call
      * e.g. $macro1()$ returns "$macro2()"
      */
-    const matches = [...text.matchAll(/(declare )?(function )?([a-zA-Z0-9_]*\.)*(\$[a-zA-Z0-9_]+?\$)(<.+>)?\(/g)]
+    const matches = [...text.matchAll(/(export )?(declare )?(function )?([a-zA-Z0-9_]*\.)*(\$[a-zA-Z0-9_]+?\$)(<.+>)?\(/g)]
 
     if (matches.length === 0)
       break
@@ -303,7 +303,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (match.index == null)
         continue
 
-      const [_raw, decl, func, _prefix, name, _generic] = match
+      const [_raw, exp, decl, func, _prefix, name, _generic] = match
 
       /**
        * Ignore declarations
@@ -320,11 +320,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (definitionByName.has(name))
         continue
 
-      const newline = text.lastIndexOf("\n", match.index)
-      const semicolon = text.lastIndexOf(";", match.index)
-      const start = Math.max(newline, semicolon) + 1
-
-      const block = readBlock(text, start)
+      const block = readBlock(text, match.index)
 
       /**
        * Block is probably in a quote or in a comment
@@ -334,18 +330,21 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
       definitionByName.set(name, block)
 
-      if (block.trim().startsWith("export"))
+      /**
+       * Do not erase exported macro functions
+       */
+      if (exp)
         continue
 
       let suffix = ""
 
-      if (text[start + block.length] === "\n")
+      if (text[match.index + block.length] === "\n")
         suffix += "\n"
 
-      if (text[start + block.length + 1] === "\n")
+      if (text[match.index + block.length + 1] === "\n")
         suffix += "\n"
 
-      text = Strings.replaceAt(text, block + suffix, "", start, start + block.length + suffix.length)
+      text = Strings.replaceAt(text, block + suffix, "", match.index, match.index + block.length + suffix.length)
 
       /**
        * Restart because the content and indexes changed
@@ -371,7 +370,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (match.index == null)
         continue
 
-      const [_raw, decl, func, _prefix, name, _generic] = match
+      const [_raw, _exp, decl, func, _prefix, name, _generic] = match
 
       /**
        * Ignore declarations
