@@ -417,15 +417,13 @@ export async function compile(file: string, options: CompileOptions = {}) {
       const definition = definitionByName.get(name) ?? ""
 
       const code = ``
-        + [...imports.values()].join("\n")
-        + "\n\n"
         + `function $raw$(text) { return text }`
+        + "\n\n"
+        + [...imports.values()].join("\n")
         + "\n\n"
         + definition
         + "\n\n"
         + `export const output = ${call}`
-
-      console.log(code)
 
       try {
         await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
