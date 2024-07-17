@@ -289,7 +289,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
      * Rematch all in case the previous macro call returned another macro call
      * e.g. $macro1()$ returns "$macro2()"
      */
-    const matches = [...text.matchAll(/(function )?([a-zA-Z0-9.]*\.)?(\$.+?\$)(<.+>)?\(/g)]
+    const matches = [...text.matchAll(/(declare )?(function )?([a-zA-Z0-9.]*\.)?(\$.+?\$)(<.+>)?\(/g)]
 
     if (matches.length === 0)
       break
@@ -303,7 +303,13 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (match.index == null)
         continue
 
-      const [_raw, func, _prefix, name, _generic] = match
+      const [_raw, decl, func, _prefix, name, _generic] = match
+
+      /**
+       * Ignore declarations
+       */
+      if (decl)
+        continue
 
       /**
        * Ensure it's a macro definition
@@ -365,7 +371,13 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (match.index == null)
         continue
 
-      const [_raw, func, _prefix, name, _generic] = match
+      const [_raw, decl, func, _prefix, name, _generic] = match
+
+      /**
+       * Ignore declarations
+       */
+      if (decl)
+        continue
 
       /**
        * Ensure it's a macro call
@@ -407,9 +419,13 @@ export async function compile(file: string, options: CompileOptions = {}) {
       const code = ``
         + [...imports.values()].join("\n")
         + "\n\n"
+        + `function $raw$(text) { return text }`
+        + "\n\n"
         + definition
         + "\n\n"
         + `export const output = ${call}`
+
+      console.log(code)
 
       try {
         await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
