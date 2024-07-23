@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@hazae41/saumon",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "Ultra simple macro system for TypeScript",
   "homepage": "https://github.com/hazae41/phobos",
   "repository": "github:hazae41/phobos",
