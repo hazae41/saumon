@@ -243,7 +243,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
         const lines = comment.split("\n")
 
-        if (lines[1].trim().startsWith("* @macro uncomment")) {
+        if (lines.at(1)?.trim().startsWith("* @macro uncomment")) {
           const start = text.lastIndexOf("/*", i.x)
           const end = text.indexOf("*/", start) + 2
 
@@ -267,7 +267,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
           continue
         }
 
-        if (lines[1].trim().startsWith("* @macro delete-next-lines")) {
+        if (lines.at(1)?.trim().startsWith("* @macro delete-next-lines")) {
           const start = text.lastIndexOf("/*", i.x)
           const preend = text.indexOf("\n\n", i.x + 1)
 
