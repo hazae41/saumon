@@ -17,8 +17,8 @@ export type CharType =
   | "single-quoted"
   | "double-quoted"
 
-function isQuoted(text: string, i: Index, quote: string) {
-  return text[i.x] === quote && text[i.x - 1] !== "\\"
+function isEscaped(text: string, i: Index) {
+  return text[i.x - 1] === "\\" && text[i.x - 2] !== "\\"
 }
 
 function* allDoubleQuoted(text: string, i: Index, r: Iterable<void>): Generator<"double-quoted"> {
@@ -32,7 +32,7 @@ function* allDoubleQuoted(text: string, i: Index, r: Iterable<void>): Generator<
     if (text[i.x] === "\n")
       break
 
-    if (isQuoted(text, i, '"')) {
+    if (!isEscaped(text, i) && text[i.x] === '"') {
       yield type
       break
     }
@@ -52,7 +52,7 @@ function* allSingleQuoted(text: string, i: Index, r: Iterable<void>): Generator<
     if (text[i.x] === "\n")
       break
 
-    if (isQuoted(text, i, "'")) {
+    if (!isEscaped(text, i) && text[i.x] === "'") {
       yield type
       break
     }
@@ -69,7 +69,7 @@ function* allTemplateQuoted(text: string, i: Index, r: Iterable<void>): Generato
    * Yield until end
    */
   for (const _ of unclosed(r)) {
-    if (text[i.x] === "$" && text[i.x - 1] !== "\\" && text[i.x + 1] === "{") {
+    if (!isEscaped(text, i) && text[i.x] === "$" && text[i.x + 1] === "{") {
       yield type
       i.x++
       yield type
@@ -106,7 +106,7 @@ function* allTemplateQuoted(text: string, i: Index, r: Iterable<void>): Generato
       continue
     }
 
-    if (isQuoted(text, i, "`")) {
+    if (!isEscaped(text, i) && text[i.x] === "`") {
       yield type
       break
     }
@@ -159,13 +159,17 @@ function* allLineCommented(text: string, i: Index, r: Iterable<void>): Generator
   }
 }
 
+export function isRegex(text: string, i: Index) {
+  return text[i.x] === "/"
+}
+
 export function* typed(text: string, i: Index, r: Iterable<void>): Generator<CharType> {
   for (const _ of unclosed(r)) {
-    if (isQuoted(text, i, "`"))
+    if (text[i.x] === "`")
       yield* allTemplateQuoted(text, i, r)
-    else if (isQuoted(text, i, "'"))
+    else if (text[i.x] === "'")
       yield* allSingleQuoted(text, i, r)
-    else if (isQuoted(text, i, '"'))
+    else if (text[i.x] === '"')
       yield* allDoubleQuoted(text, i, r)
     else if (isStartBlockCommented(text, i))
       yield* allBlockCommented(text, i, r)
