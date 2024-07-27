@@ -51,7 +51,7 @@ console.log("hello world")
 
 ## Usage
 
-A macro is like a regular JS function, but the preprocessor will replace all its calls by the string value it returns
+A macro is like a regular JS function, but the compiler will replace all its calls by the string value it returns
 
 ### CLI
 
@@ -71,7 +71,7 @@ saumon build -r ./src
 
 ### Files 
 
-The preprocessor will only transform files with `.macro.*` extensions
+The compiler will only transform files with `.macro.*` extensions
 
 ### Definition
 
@@ -275,7 +275,7 @@ export const data = {"id":123}
 
 #### You can define and run async macros
 
-Just return a Promise and the preprocessor will wait for it
+Just return a Promise and the compiler will wait for it
 
 `fetch.macro.ts`
 
