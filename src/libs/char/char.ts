@@ -179,7 +179,7 @@ export function getRegexes(text: string) {
     try {
       eval(`new RegExp(${regex})`)
     } catch (e) {
-      index += match.index + 1
+      index += match.index + 2
       slice = text.slice(index)
       continue
     }
@@ -187,7 +187,7 @@ export function getRegexes(text: string) {
     const start = index - 1 + match.index + raw.length - regex.length
     regxs.push([start, start + regex.length])
 
-    index += match.index + 1
+    index += match.index + 2
     slice = text.slice(index)
     continue
   }
@@ -200,12 +200,12 @@ export function getRegex(regexes: Array<[number, number]>, index: Index) {
     const [start, end] = regex
 
     if (index.value < start)
-      continue
+      return
 
     if (index.value < end)
       return regex
 
-    return
+    continue
   }
 }
 
