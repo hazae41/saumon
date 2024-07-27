@@ -1,5 +1,5 @@
 import fs from "fs/promises";
-import { CharType, Index, raw, typed } from "libs/char/char.js";
+import { all, allTyped, CharType, getRegexes, Index } from "libs/char/char.js";
 import { unclosed } from "libs/iterable/iterable.js";
 import { Strings } from "libs/strings/strings.js";
 import path from "path";
@@ -17,47 +17,47 @@ function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
     /**
      * Stop at end of line
      */
-    if (text[i.x] === "\n")
+    if (text[i.value] === "\n")
       break
 
     /**
      * Stop at the end of expression
      */
-    if (text[i.x] === ";")
+    if (text[i.value] === ";")
       break
 
     yield
   }
 }
 
-function readCall(text: string, index: number) {
+function readCall(text: string, regexes: Array<[number, number]>, start: number) {
   let call = ""
   let depth = 0
 
-  const i = { x: 0 }
-  const r = raw(text, i)
+  const index = { value: 0 }
+  const iterable = all(text, index)
 
-  for (const type of typed(text, i, r)) {
-    if (i.x < index)
+  for (const type of allTyped(text, regexes, index, iterable)) {
+    if (index.value < start)
       continue
-    if (i.x === index && type !== "code")
+    if (index.value === start && type !== "code")
       return
     /**
      * Do not check quoted
      */
     if (type !== "code") {
-      call += text[i.x]
+      call += text[index.value]
       continue
     }
 
-    call += text[i.x]
+    call += text[index.value]
 
-    if (text[i.x] === "(") {
+    if (text[index.value] === "(") {
       depth++
       continue
     }
 
-    if (text[i.x] === ")") {
+    if (text[index.value] === ")") {
       depth--
       if (depth === 0)
         break
@@ -73,35 +73,35 @@ function readCall(text: string, index: number) {
   return call
 }
 
-function readBlock(text: string, index: number) {
+function readBlock(text: string, regexes: Array<[number, number]>, start: number) {
   let call = ""
   let depth = 0
 
-  const i = { x: 0 }
-  const r = raw(text, i)
+  const index = { value: 0 }
+  const iterable = all(text, index)
 
-  for (const type of typed(text, i, r)) {
-    if (i.x < index)
+  for (const type of allTyped(text, regexes, index, iterable)) {
+    if (index.value < start)
       continue
-    if (i.x === index && type !== "code")
+    if (index.value === start && type !== "code")
       return
 
     /**
      * Do not check quoted
      */
     if (type !== "code") {
-      call += text[i.x]
+      call += text[index.value]
       continue
     }
 
-    call += text[i.x]
+    call += text[index.value]
 
-    if (text[i.x] === "{") {
+    if (text[index.value] === "{") {
       depth++
       continue
     }
 
-    if (text[i.x] === "}") {
+    if (text[index.value] === "}") {
       depth--
 
       if (depth === 0)
@@ -144,24 +144,26 @@ export async function compile(file: string, options: CompileOptions = {}) {
   const definitionByName = new Map<string, string>()
 
   while (true) {
+    const regexes = getRegexes(text)
+
     /**
      * Process expressions
      */
     {
-      const i = { x: 0 }
-      const r = raw(text, i)
-      const c = typed(text, i, r)
+      const index = { value: 0 }
+      const voids = all(text, index)
+      const chars = allTyped(text, regexes, index, voids)
 
-      for (const _ of unclosed(c)) {
-        if (text[i.x] === "\n")
+      for (const _ of unclosed(chars)) {
+        if (text[index.value] === "\n")
           continue
-        if (text[i.x] === ";")
+        if (text[index.value] === ";")
           continue
 
-        let expression = text[i.x]
+        let expression = text[index.value]
 
-        for (const _ of allExpression(text, i, c))
-          expression += text[i.x]
+        for (const _ of allExpression(text, index, chars))
+          expression += text[index.value]
 
         if (expression.trim().startsWith("import ")) {
           imports.add(expression)
@@ -174,27 +176,27 @@ export async function compile(file: string, options: CompileOptions = {}) {
 
         {
           let previous: number | undefined
-          let index: number
+          let current: number
 
           /**
            * Search all require() calls (even quoted or commented)
            */
-          while ((index = expression.indexOf("require(", previous)) !== -1) {
-            previous = index
+          while ((current = expression.indexOf("require(", previous)) !== -1) {
+            previous = current
 
-            const i = { x: 0 }
-            const r = raw(text, i)
+            const index = { value: 0 }
+            const voids = all(text, index)
 
             /**
              * Try to find it in unquoted and uncommented code
              */
-            for (const type of typed(text, i, r)) {
+            for (const type of allTyped(text, regexes, index, voids)) {
               if (type !== "code")
                 continue
 
-              if (i.x < index)
+              if (index.value < current)
                 continue
-              if (i.x > index)
+              if (index.value > current)
                 break
               break
             }
@@ -202,7 +204,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
             /**
              * Found it in unquoted and uncommented code
              */
-            if (i.x === index) {
+            if (index.value === current) {
               imports.add(expression)
 
               /**
@@ -225,51 +227,51 @@ export async function compile(file: string, options: CompileOptions = {}) {
      * Process comments
      */
     {
-      const i = { x: 0 }
-      const r = raw(text, i)
-      const c = typed(text, i, r)
+      const index = { value: 0 }
+      const voids = all(text, index)
+      const chars = allTyped(text, regexes, index, voids)
 
-      for (const type of unclosed(c)) {
+      for (const type of unclosed(chars)) {
         if (type !== "block-commented")
           continue
 
-        let comment = text[i.x]
+        let comment = text[index.value]
 
-        for (const type of unclosed(c)) {
+        for (const type of unclosed(chars)) {
           if (type !== "block-commented")
             break
-          comment += text[i.x]
+          comment += text[index.value]
         }
 
         const lines = comment.split("\n")
 
         if (lines.at(1)?.trim().startsWith("* @macro uncomment")) {
-          const start = text.lastIndexOf("/*", i.x)
+          const start = text.lastIndexOf("/*", index.value)
           const end = text.indexOf("*/", start) + 2
 
           const original = text.slice(start, end)
 
-          let index = 0
+          let subindex = 0
 
-          delete lines[index++]
-          delete lines[index++]
+          delete lines[subindex++]
+          delete lines[subindex++]
 
-          for (; index < lines.length; index++)
-            lines[index] = lines[index].replace("* ", "")
+          for (; subindex < lines.length; subindex++)
+            lines[subindex] = lines[subindex].replace("* ", "")
 
-          delete lines[index - 1]
+          delete lines[subindex - 1]
 
           const modified = lines.filter(it => it != null).join("\n")
 
           text = Strings.replaceAt(text, original, modified, start, end)
-          i.x = start + modified.length
+          index.value = start + modified.length
 
           continue
         }
 
         if (lines.at(1)?.trim().startsWith("* @macro delete-next-lines")) {
-          const start = text.lastIndexOf("/*", i.x)
-          const preend = text.indexOf("\n\n", i.x + 1)
+          const start = text.lastIndexOf("/*", index.value)
+          const preend = text.indexOf("\n\n", index.value + 1)
 
           const end = preend === -1
             ? text.length
@@ -278,7 +280,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
           const original = text.slice(start, end)
 
           text = Strings.replaceAt(text, original, "", start, end)
-          i.x = start
+          index.value = start
 
           continue
         }
@@ -320,7 +322,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (definitionByName.has(name))
         continue
 
-      const block = readBlock(text, match.index)
+      const block = readBlock(text, regexes, match.index)
 
       /**
        * Block is probably in a quote or in a comment
@@ -384,7 +386,7 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (func)
         continue
 
-      const call = readCall(text, match.index)
+      const call = readCall(text, regexes, match.index)
 
       /**
        * Call is probably in a quote or in a comment

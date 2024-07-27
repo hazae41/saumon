@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && rollup -c",
-    "test": "node ./dist/test/index.test.mjs",
+    "test": "bun ./dist/cli/index.cli.mjs build -r ./test",
     "prepare": "npm run build"
   },
   "devDependencies": {

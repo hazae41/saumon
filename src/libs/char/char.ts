@@ -1,38 +1,39 @@
 import { unclosed } from "libs/iterable/iterable.js"
 
 export interface Index {
-  x: number
+  value: number
 }
 
-export function* raw(text: string, i: Index) {
-  for (; i.x < text.length; i.x++)
+export function* all(text: string, index: Index) {
+  for (; index.value < text.length; index.value++)
     yield
 }
 
 export type CharType =
   | "code"
+  | "regex"
   | "line-commented"
   | "block-commented"
   | "template-quoted"
   | "single-quoted"
   | "double-quoted"
 
-function isEscaped(text: string, i: Index) {
-  return text[i.x - 1] === "\\" && text[i.x - 2] !== "\\"
+function isEscaped(text: string, index: Index) {
+  return text[index.value - 1] === "\\" && text[index.value - 2] !== "\\"
 }
 
-function* allDoubleQuoted(text: string, i: Index, r: Iterable<void>): Generator<"double-quoted"> {
+function* allDoubleQuoted(text: string, index: Index, voids: Iterable<void>): Generator<"double-quoted"> {
   const type = "double-quoted"
   yield type
 
   /**
    * Yield until end
    */
-  for (const _ of unclosed(r)) {
-    if (text[i.x] === "\n")
+  for (const _ of unclosed(voids)) {
+    if (text[index.value] === "\n")
       break
 
-    if (!isEscaped(text, i) && text[i.x] === '"') {
+    if (!isEscaped(text, index) && text[index.value] === '"') {
       yield type
       break
     }
@@ -41,18 +42,18 @@ function* allDoubleQuoted(text: string, i: Index, r: Iterable<void>): Generator<
   }
 }
 
-function* allSingleQuoted(text: string, i: Index, r: Iterable<void>): Generator<"single-quoted"> {
+function* allSingleQuoted(text: string, index: Index, voids: Iterable<void>): Generator<"single-quoted"> {
   const type = "single-quoted"
   yield type
 
   /**
    * Yield until end
    */
-  for (const _ of unclosed(r)) {
-    if (text[i.x] === "\n")
+  for (const _ of unclosed(voids)) {
+    if (text[index.value] === "\n")
       break
 
-    if (!isEscaped(text, i) && text[i.x] === "'") {
+    if (!isEscaped(text, index) && text[index.value] === "'") {
       yield type
       break
     }
@@ -61,34 +62,34 @@ function* allSingleQuoted(text: string, i: Index, r: Iterable<void>): Generator<
   }
 }
 
-function* allTemplateQuoted(text: string, i: Index, r: Iterable<void>): Generator<CharType> {
+function* allTemplateQuoted(text: string, regexes: Array<[number, number]>, index: Index, voids: Iterable<void>): Generator<CharType> {
   const type = "template-quoted"
   yield type
 
   /**
    * Yield until end
    */
-  for (const _ of unclosed(r)) {
-    if (!isEscaped(text, i) && text[i.x] === "$" && text[i.x + 1] === "{") {
+  for (const _ of unclosed(voids)) {
+    if (!isEscaped(text, index) && text[index.value] === "$" && text[index.value + 1] === "{") {
       yield type
-      i.x++
+      index.value++
       yield type
 
       let depth = 1
 
-      for (const type of typed(text, i, r)) {
+      for (const type of allTyped(text, regexes, index, voids)) {
         if (type !== "code") {
           yield type
           continue
         }
 
-        if (text[i.x] === "{") {
+        if (text[index.value] === "{") {
           depth++
           yield type
           continue
         }
 
-        if (text[i.x] === "}") {
+        if (text[index.value] === "}") {
           depth--
 
           if (depth === 0)
@@ -106,7 +107,7 @@ function* allTemplateQuoted(text: string, i: Index, r: Iterable<void>): Generato
       continue
     }
 
-    if (!isEscaped(text, i) && text[i.x] === "`") {
+    if (!isEscaped(text, index) && text[index.value] === "`") {
       yield type
       break
     }
@@ -115,23 +116,23 @@ function* allTemplateQuoted(text: string, i: Index, r: Iterable<void>): Generato
   }
 }
 
-export function isStartBlockCommented(text: string, i: Index) {
-  return text.slice(i.x, i.x + "/*".length) === "/*"
+export function isStartBlockCommented(text: string, index: Index) {
+  return text.slice(index.value, index.value + "/*".length) === "/*"
 }
 
-export function isEndBlockCommented(text: string, i: Index) {
-  return text.slice(i.x + 1 - "*/".length, i.x + 1) === "*/"
+export function isEndBlockCommented(text: string, index: Index) {
+  return text.slice(index.value + 1 - "*/".length, index.value + 1) === "*/"
 }
 
-export function* allBlockCommented(text: string, i: Index, r: Iterable<void>): Generator<"block-commented"> {
+export function* allBlockCommented(text: string, index: Index, voids: Iterable<void>): Generator<"block-commented"> {
   const type = "block-commented"
   yield type
 
   /**
    * Yield until end
    */
-  for (const _ of unclosed(r)) {
-    if (isEndBlockCommented(text, i)) {
+  for (const _ of unclosed(voids)) {
+    if (isEndBlockCommented(text, index)) {
       yield type
       break
     }
@@ -140,42 +141,118 @@ export function* allBlockCommented(text: string, i: Index, r: Iterable<void>): G
   }
 }
 
-function isLineCommented(text: string, i: Index) {
-  return text.slice(i.x, i.x + "//".length) === "//"
+function isLineCommented(text: string, index: Index) {
+  return text.slice(index.value, index.value + "//".length) === "//"
 }
 
-function* allLineCommented(text: string, i: Index, r: Iterable<void>): Generator<"line-commented"> {
+function* allLineCommented(text: string, index: Index, voids: Iterable<void>): Generator<"line-commented"> {
   const type = "line-commented"
   yield type
 
   /**
    * Yield until end
    */
-  for (const _ of unclosed(r)) {
-    if (text[i.x] === "\n")
+  for (const _ of unclosed(voids)) {
+    if (text[index.value] === "\n")
       break
 
     yield type
   }
 }
 
-export function isRegex(text: string, i: Index) {
-  return text[i.x] === "/"
+export function getRegexes(text: string) {
+  const regxs = new Array<[number, number]>()
+
+  let index = 0
+  let slice = text
+
+  while (true) {
+    const match = slice.match(/(?:(?:^)|(?:\:\s*)|(?:\=\s*)|(?:\(\s*)|(?:return\s*))(\/((?![*+?])(?:[^\r\n\[\/\\]|\\.|\[(?:[^\r\n\]\\]|\\.)*\])+)\/[gimsuy]{0,6})(?:(?:$)|(?:\s*\.)|(?:\s*\,)|(?:\s*\;)|(?:\s*\)))/m)
+
+    if (match == null)
+      break
+    if (match.index == null)
+      break
+
+    const [raw, regex] = match
+
+    try {
+      eval(`new RegExp(${regex})`)
+    } catch (e) {
+      index += match.index + 1
+      slice = text.slice(index)
+      continue
+    }
+
+    const start = index - 1 + match.index + raw.length - regex.length
+    regxs.push([start, start + regex.length])
+
+    index += match.index + 1
+    slice = text.slice(index)
+    continue
+  }
+
+  return regxs
 }
 
-export function* typed(text: string, i: Index, r: Iterable<void>): Generator<CharType> {
-  for (const _ of unclosed(r)) {
-    if (text[i.x] === "`")
-      yield* allTemplateQuoted(text, i, r)
-    else if (text[i.x] === "'")
-      yield* allSingleQuoted(text, i, r)
-    else if (text[i.x] === '"')
-      yield* allDoubleQuoted(text, i, r)
-    else if (isStartBlockCommented(text, i))
-      yield* allBlockCommented(text, i, r)
-    else if (isLineCommented(text, i))
-      yield* allLineCommented(text, i, r)
-    else
-      yield "code"
+export function getRegex(regexes: Array<[number, number]>, index: Index) {
+  for (const regex of regexes) {
+    const [start, end] = regex
+
+    if (index.value < start)
+      continue
+
+    if (index.value < end)
+      return regex
+
+    return
+  }
+}
+
+export function* allUntil<T>(index: Index, voids: Iterable<void>, value: T, end: number): Generator<T> {
+  for (const _ of unclosed(voids)) {
+    if (index.value === end)
+      break
+    yield value
+  }
+}
+
+export function* allTyped(text: string, regexes: Array<[number, number]>, index: Index, voids: Iterable<void>): Generator<CharType> {
+  for (const _ of unclosed(voids)) {
+    if (text[index.value] === "`") {
+      yield* allTemplateQuoted(text, regexes, index, voids)
+      continue
+    }
+
+    if (text[index.value] === "'") {
+      yield* allSingleQuoted(text, index, voids)
+      continue
+    }
+
+    if (text[index.value] === '"') {
+      yield* allDoubleQuoted(text, index, voids)
+      continue
+    }
+
+    if (isStartBlockCommented(text, index)) {
+      yield* allBlockCommented(text, index, voids)
+      continue
+    }
+
+    if (isLineCommented(text, index)) {
+      yield* allLineCommented(text, index, voids)
+      continue
+    }
+
+    const regex = getRegex(regexes, index)
+
+    if (regex != null) {
+      const [_start, end] = regex
+
+      yield* allUntil(index, voids, "regex", end)
+      continue
+    }
+
+    yield "code"
   }
 }
