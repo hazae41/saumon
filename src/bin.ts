@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env deno run -A
 
 import { walk } from "@/libs/fs/mod.ts";
 import process from "node:process";
