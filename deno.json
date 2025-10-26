@@ -14,5 +14,14 @@
         "no-namespace"
       ]
     }
-  }
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.ns",
+      "deno.worker"
+    ]
+  },
+  "unstable": [
+    "worker-options"
+  ]
 }

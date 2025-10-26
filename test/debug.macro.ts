@@ -1,3 +1,3 @@
-import { $debug$ } from "./macros/debug.js"
+import { $debug$ } from "./macros/debug.ts"
 
 $debug$("test")

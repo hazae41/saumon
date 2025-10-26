@@ -1,3 +1,3 @@
-const { $imported$ } = require("./macros/imported.js")
+const { $imported$ } = require("./macros/imported.ts")
 
 $imported$("lol")

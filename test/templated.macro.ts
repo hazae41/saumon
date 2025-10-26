@@ -1,4 +1,4 @@
-import { $debug$ } from "./macros/debug.js";
+import { $debug$ } from "./macros/debug.ts";
 
 function $stringify$(x: unknown) {
   return `\`${JSON.stringify(x)}\``

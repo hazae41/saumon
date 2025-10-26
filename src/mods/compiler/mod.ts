@@ -1,9 +1,9 @@
 import { all, allTyped, type CharType, getRegexes, type Index } from "@/libs/char/mod.ts";
 import { unclosed } from "@/libs/iterable/mod.ts";
 import { Strings } from "@/libs/strings/mod.ts";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
+import path from "node:path";
 import process from "node:process";
-import path from "path";
 
 function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
   for (const type of unclosed(c)) {
@@ -127,6 +127,8 @@ export async function compile(file: string, options: CompileOptions = {}) {
   const { debug = false } = options
 
   const extension = path.extname(file).slice(1)
+
+  console.log(file)
 
   if (!extension)
     throw new Error(`Not a macro file`)

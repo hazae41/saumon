@@ -4,7 +4,7 @@ function $random$() {
 
 `import
 
-lol`; import { $imported$ } from "./macros/imported.js";
+lol`; import { $imported$ } from "./macros/imported.ts";
 
 /**
  * @macro uncomment
