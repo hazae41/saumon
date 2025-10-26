@@ -1,7 +1,5 @@
-function $type$() {
-  return `export interface Data {
-    id: number
-  }`
-}
+declare function $$<T>(callback: () => string): T
 
-$type$()
+$$(() => `export interface Data {
+  id: number
+}`)

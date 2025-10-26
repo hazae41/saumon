@@ -1,1 +1,3 @@
-console.log({"id":123})
+declare function $$<T>(callback: () => string): T
+
+export const data = {"id":123}

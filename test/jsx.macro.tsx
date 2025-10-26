@@ -1,9 +1,7 @@
-function $jsx$() {
-  return `<div>hello world</div>`
-}
+declare function $$<T>(callback: () => string): T
 
-function Page() {
-  return $jsx$()
+export function Page() {
+  return $$(() => `<div>hello world</div>`)
 }
 
 

@@ -1,9 +1,3 @@
-function $one$(x: string) {
-  return `console.log(${JSON.stringify(x)})`
-}
+declare function $$<T>(callback: () => string): T
 
-function $two$() {
-  return `${JSON.stringify(crypto.randomUUID())}`
-}
-
-$one$($two$())
+$$(() => $$(() => `'console.log("hello world")'`))

@@ -1,3 +1,5 @@
-import { $debug$ } from "./macros/debug.js";
+declare function $$<T>(callback: () => string): T
 
-console.debug("test {\n  {\"hello\":true}\n}")
+console.log(`test {
+  ${'lol'}
+}`)

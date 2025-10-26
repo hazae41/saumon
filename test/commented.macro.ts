@@ -1,5 +1,5 @@
 /**
- * $test$()
+ * $$(() => "lol")
  */
 
-console.log("lol") // $test$()
+console.log("lol") // $$(() => "lol")

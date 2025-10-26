@@ -1,5 +1,3 @@
-function $parse$<T>(x: string): T {
-  return JSON.stringify(JSON.parse(x)) as any
-}
+declare function $$<T>(callback: () => string): T
 
-console.log($parse$<{ id: number }>(`{"id":123}`))
+export const data = $$<{ id: number }>(() => JSON.stringify(JSON.parse(`{"id":123}`)))

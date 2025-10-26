@@ -1,1 +1,3 @@
-const x = 0.671426916296341 * 100
+declare function $$<T>(callback: () => string): T
+
+export const x = 0.5882936241195852 * 100

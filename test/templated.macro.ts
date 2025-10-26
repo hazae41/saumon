@@ -1,9 +1,5 @@
-import { $debug$ } from "./macros/debug.ts";
+declare function $$<T>(callback: () => string): T
 
-function $stringify$(x: unknown) {
-  return `\`${JSON.stringify(x)}\``
-}
-
-$debug$(`test {
-  ${$stringify$({ hello: true })}
+console.log(`test {
+  ${$$(() => "'lol'")}
 }`)

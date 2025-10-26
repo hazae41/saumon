@@ -1,5 +1,3 @@
-function $random$(): number {
-  return `${Math.random()}` as any
-}
+declare function $$<T>(callback: () => string): T
 
-const x = $random$() * 100
+export const x = $$<number>(() => `${Math.random()}`) * 100

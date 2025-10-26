@@ -1,8 +1,5 @@
 import { all, allTyped, getRegexes } from "@/libs/char/mod.ts";
 import { Strings } from "@/libs/strings/mod.ts";
-import fs from "node:fs/promises";
-import path from "node:path";
-import process from "node:process";
 
 function readNextCall(text: string, regexes: Array<[number, number]>, start: number) {
   let call = ""
@@ -51,33 +48,13 @@ export interface CompileOptions {
   readonly debug?: boolean
 }
 
-export async function compile(file: string, options: CompileOptions = {}) {
-  const { debug = false } = options
-
-  const extension = path.extname(file).slice(1)
-
-  console.log(file)
-
-  if (!extension)
-    throw new Error(`Not a macro file`)
-
-  if (!file.endsWith(`.macro.${extension}`))
-    throw new Error(`Not a macro file`)
-
-  const basename = path.basename(file, `.macro.${extension}`)
-  const filename = path.join(process.cwd(), file)
-  const dirname = path.dirname(filename)
-
-  let text = await fs.readFile(filename, "utf8")
-
-  const outputByInput = new Map<string, string>()
-
+export async function* compile(text: string): AsyncGenerator<string, string, string> {
   while (true) {
     const regexes = getRegexes(text)
 
     /**
      * Rematch all in case the previous macro call returned another macro call
-     * e.g. $macro1()$ returns "$macro2()"
+     * e.g. $$(() => ...) returns "$$(() => ...)"
      */
     const matches = [...text.matchAll(/(declare function )?\$\$(<.+>)?\(/g)]
 
@@ -87,23 +64,17 @@ export async function compile(file: string, options: CompileOptions = {}) {
     let restart = false
 
     /**
-     * Reverse the matches so we can patch macro calls in macro calls
-     * e.g. $macro1$($macro2$()) will first patch $macro2$() then $macro1$()
+     * Reverse the matches so we can call macros in macro calls
+     * e.g. $$(() => $$(() => ...)) will first call the inner macro
      */
     matches.reverse()
 
-    /**
-     * Process all macro calls
-     */
     for (const match of matches) {
       if (match.index == null)
         continue
 
-      const [_, declaration] = match
+      const declaration = match[1]
 
-      /**
-       * Ensure it's a macro call
-       */
       if (declaration)
         continue
 
@@ -115,64 +86,19 @@ export async function compile(file: string, options: CompileOptions = {}) {
       if (call == null)
         continue
 
-      /**
-       * Check if cached
-       */
-      const cached = outputByInput.get(call)
-
-      if (cached != null) {
-        text = Strings.replaceAt(text, call, cached, match.index, match.index + call.length)
-
-        /**
-         * Restart because the content and indexes changed
-         */
-        restart = true
-
-        break
-      }
+      const output = yield call
 
       /**
-       * Per-call identifier
+       * Apply
        */
-      const identifier = crypto.randomUUID().split("-")[0]
+      text = Strings.replaceAt(text, call, output, match.index, match.index + call.length)
 
-      const code = `const $$ = (callback) => callback(); export const run = await ${call}`
+      /**
+       * Restart because the content and indexes changed
+       */
+      restart = true
 
-      try {
-        await fs.writeFile(`${dirname}/.${identifier}.saumon.${extension}`, code, "utf8")
-
-        let { output } = await import(`${dirname}/.${identifier}.saumon.${extension}`)
-
-        if (output == null)
-          output = ""
-
-        if (typeof output !== "string")
-          throw new Error(`Evaluation failed`)
-
-        /**
-         * Fill the cache
-         */
-        outputByInput.set(call, output)
-
-        /**
-         * Apply
-         */
-        text = Strings.replaceAt(text, call, output, match.index, match.index + call.length)
-
-        /**
-         * Restart because the content and indexes changed
-         */
-        restart = true
-
-        break
-      } finally {
-        if (!debug) {
-          /**
-           * Clean
-           */
-          await fs.rm(`${dirname}/.${identifier}.saumon.${extension}`, { force: true })
-        }
-      }
+      break
     }
 
     if (restart)
@@ -180,5 +106,5 @@ export async function compile(file: string, options: CompileOptions = {}) {
     break
   }
 
-  await fs.writeFile(`${dirname}/${basename}.${extension}`, text, "utf8")
+  return text
 }

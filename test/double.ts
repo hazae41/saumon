@@ -1,1 +1,3 @@
-console.log("557cc0db-6536-405e-92ce-f39e1fe83b04")
+declare function $$<T>(callback: () => string): T
+
+console.log("hello world")

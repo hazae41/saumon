@@ -1,10 +1,3 @@
-function $fetch$<T>(url: string): T {
-  return (async () => {
-    const response = await fetch(url)
-    const object = await response.json()
+declare function $$<T>(callback: () => Promise<string>): T
 
-    return JSON.stringify(object)
-  })() as any
-}
-
-console.log($fetch$<{ id: number }>("https://dummyjson.com/products/1"))
+const data = $$(() => fetch("https://dummyjson.com/products/1").then(r => r.json()).then(JSON.stringify))

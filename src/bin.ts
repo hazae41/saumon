@@ -2,7 +2,6 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { walk } from "@/libs/fs/mod.ts";
 import process from "node:process";
 
 const args = process.argv.slice(2)
@@ -10,16 +9,10 @@ const args = process.argv.slice(2)
 const paths = new Array<string>()
 
 const options: {
-  recursive?: boolean,
   debug?: boolean
 } = {}
 
 for (const arg of args) {
-  if (arg === "-r" || arg === "--recursive") {
-    options.recursive = true
-    continue
-  }
-
   if (arg === "-d" || arg === "--debug") {
     options.debug = true
     continue
@@ -28,19 +21,9 @@ for (const arg of args) {
   paths.push(arg)
 }
 
-const recursive = async (path: string) => {
-  for await (const file of walk(path)) {
-    const extension = file.split(".").at(-1)
-
-    if (!file.endsWith(`.macro.${extension}`))
-      continue
-    spawn(file).catch(console.error)
-  }
-}
-
 const module = new URL("./mods/worker/mod.ts", import.meta.url)
 
-const spawn = async (file: string) => {
+const spawn = async (entrypoint: string) => {
   using stack = new DisposableStack()
 
   const worker = new Worker(module, {
@@ -50,7 +33,7 @@ const spawn = async (file: string) => {
 
   stack.defer(() => worker.terminate())
 
-  worker.postMessage({ file, options })
+  worker.postMessage({ entrypoint })
 
   const future = Promise.withResolvers<void>()
 
@@ -68,10 +51,10 @@ const spawn = async (file: string) => {
   await future.promise
 }
 
-for (const path of paths) {
-  if (options.recursive)
-    await recursive(path)
-  else
-    spawn(path).catch(console.error)
-}
+const spawns = new Array<Promise<void>>()
+
+for (const path of paths)
+  spawns.push(spawn(path))
+
+await Promise.all(spawns)
 
