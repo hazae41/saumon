@@ -1,7 +1,11 @@
-import { walk } from "@/libs/fs/fs.ts";
-import { Worker } from "worker_threads";
+#!/usr/bin/env bun
 
-const [node, main, command, ...args] = process.argv
+import { walk } from "@/libs/fs/mod.ts";
+import process from "node:process";
+import { URL } from "node:url";
+import { Worker } from "node:worker_threads";
+
+const [command, ...args] = process.argv.slice(2)
 
 if (command === "build") {
   const paths = new Array<string>()
@@ -25,7 +29,7 @@ if (command === "build") {
     paths.push(arg)
   }
 
-  async function recursive(path: string) {
+  const recursive = async (path: string) => {
     for await (const file of walk(path)) {
       const extension = file.split(".").at(-1)
 
@@ -35,9 +39,8 @@ if (command === "build") {
     }
   }
 
-  function spawn(file: string) {
-    const workerData = { file, options }
-    new Worker(new URL("./worker.cli.ts", import.meta.url), { workerData })
+  const spawn = (file: string) => {
+    return new Worker(new URL("./worker/mod.ts", import.meta.url), { workerData: { file, options } })
   }
 
   for (const path of paths) {

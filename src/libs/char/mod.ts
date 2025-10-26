@@ -1,4 +1,4 @@
-import { unclosed } from "@/libs/iterable/iterable.ts"
+import { unclosed } from "@/libs/iterable/mod.ts"
 
 export interface Index {
   value: number
@@ -178,7 +178,7 @@ export function getRegexes(text: string) {
 
     try {
       eval(`new RegExp(${regex})`)
-    } catch (e) {
+    } catch {
       index += match.index + 2
       slice = text.slice(index)
       continue
@@ -250,6 +250,7 @@ export function* allTyped(text: string, regexes: Array<[number, number]>, index:
       const [_start, end] = regex
 
       yield* allUntil(index, voids, "regex", end)
+
       continue
     }
 
