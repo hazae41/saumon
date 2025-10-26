@@ -3,10 +3,14 @@
 Ultra simple macro system for TypeScript
 
 ```bash
-npm i @hazae41/saumon
+npm install @hazae41/saumon
 ```
 
-[**Node Package 📦**](https://www.npmjs.com/package/@hazae41/saumon)
+```bash
+deno install jsr:@hazae41/saumon
+```
+
+[**📦 NPM**](https://www.npmjs.com/package/@hazae41/saumon) • [**📦 JSR**](https://jsr.io/@hazae41/saumon)
 
 ## Goals
 - Ultra simple and minimalist

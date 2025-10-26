@@ -1,4 +1,4 @@
-import { walk } from "libs/fs/fs.js";
+import { walk } from "@/libs/fs/fs.ts";
 import { Worker } from "worker_threads";
 
 const [node, main, command, ...args] = process.argv
@@ -37,7 +37,7 @@ if (command === "build") {
 
   function spawn(file: string) {
     const workerData = { file, options }
-    new Worker(new URL("./worker.cli.js", import.meta.url), { workerData })
+    new Worker(new URL("./worker.cli.ts", import.meta.url), { workerData })
   }
 
   for (const path of paths) {

@@ -1,4 +1,4 @@
-import { unclosed } from "libs/iterable/iterable.js"
+import { unclosed } from "@/libs/iterable/iterable.ts"
 
 export interface Index {
   value: number

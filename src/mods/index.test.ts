@@ -1,1 +1,1 @@
-export * from "./compiler/index.test.js";
+export * from "./compiler/index.test.ts";

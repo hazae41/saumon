@@ -1,3 +1,3 @@
 #!/usr/bin/env bun
 
-export * from "./cli/index.cli.js";
+export * from "./cli/index.cli.ts";

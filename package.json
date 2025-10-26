@@ -3,40 +3,28 @@
   "name": "@hazae41/saumon",
   "version": "0.2.14",
   "description": "Ultra simple macro system for TypeScript",
-  "homepage": "https://github.com/hazae41/phobos",
   "repository": "github:hazae41/phobos",
   "author": "hazae41",
   "license": "MIT",
-  "main": "./dist/cjs/index.cjs",
-  "module": "./dist/esm/index.mjs",
-  "types": "./dist/types/index.d.ts",
-  "sideEffects": false,
-  "files": [
-    "./dist/esm",
-    "./dist/cjs",
-    "./dist/types",
-    "./dist/cli"
-  ],
   "scripts": {
-    "build": "rimraf dist && rollup -c",
-    "test": "bun ./dist/cli/index.cli.mjs build -r ./test",
-    "prepare": "npm run build"
+    "examine": "deno lint ./src && deno check ./src && deno test ./src",
+    "version": "deno -RW ./x.vsync.ts && git add deno.json",
+    "prepare": "deno -RW ./x.dsync.ts && deno install",
+    "prepack": "rm -rf ./out && tsc && tscousin"
   },
-  "devDependencies": {
-    "@hazae41/rimraf": "^1.0.1",
-    "@rollup/plugin-typescript": "^11.1.5",
-    "@surma/rollup-plugin-off-main-thread": "^2.2.3",
-    "@types/node": "^20.8.7",
-    "rollup": "^4.1.4",
-    "rollup-plugin-dts": "^6.1.0",
-    "rollup-plugin-node-externals": "^6.1.2"
-  },
+  "files": [
+    "./out"
+  ],
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.mjs",
-      "require": "./dist/cjs/index.cjs"
+      "types": "./out/mod.d.ts",
+      "import": "./out/mod.js"
     }
+  },
+  "devDependencies": {
+    "@hazae41/tscousin": "^1.0.28",
+    "@types/node": "^24.8.1",
+    "typescript": "^5.9.3"
   },
   "keywords": [
     "phobos",
@@ -55,6 +43,6 @@
     "browser"
   ],
   "bin": {
-    "saumon": "./dist/cli/index.cli.mjs"
+    "saumon": "./out/bin.js"
   }
 }

@@ -1,4 +1,4 @@
-import { compile } from "mods/compiler/index.js";
+import { compile } from "@/mods/compiler/index.ts";
 import { exit } from "process";
 import { workerData } from "worker_threads";
 

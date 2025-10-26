@@ -1,7 +1,7 @@
+import { all, allTyped, CharType, getRegexes, Index } from "@/libs/char/char.ts";
+import { unclosed } from "@/libs/iterable/iterable.ts";
+import { Strings } from "@/libs/strings/strings.ts";
 import fs from "fs/promises";
-import { all, allTyped, CharType, getRegexes, Index } from "libs/char/char.js";
-import { unclosed } from "libs/iterable/iterable.js";
-import { Strings } from "libs/strings/strings.js";
 import path from "path";
 
 function* allExpression(text: string, i: Index, c: Iterable<CharType>) {
