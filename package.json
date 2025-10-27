@@ -44,5 +44,8 @@
   ],
   "bin": {
     "saumon": "./out/bin.js"
+  },
+  "dependencies": {
+    "@hazae41/jsonrpc": "^1.1.10"
   }
 }

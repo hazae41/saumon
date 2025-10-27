@@ -1,44 +1,45 @@
+import { fetch } from "@/libs/rpc/mod.ts";
 import { compile } from "@/mods/compiler/mod.ts";
-import { readFile, rm, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { RpcErr, RpcError, RpcOk, RpcRequest } from "@hazae41/jsonrpc";
 
-self.addEventListener("message", async (event: MessageEvent) => {
-  const { entrypoint } = event.data
+self.addEventListener("message", async (event: Event) => {
+  const message = event as MessageEvent<string>
+  const reqinit = JSON.parse(message.data)
 
-  if (!/\.macro\.(c|m)?(t|j)s(x?)$/.test(entrypoint))
-    throw new Error(`Not a macro file`)
+  if ("method" in reqinit === false)
+    return
 
-  const input = await readFile(entrypoint, "utf8")
+  const request = RpcRequest.from(reqinit)
 
-  const compiler = compile(input)
+  if (request.method !== "compile")
+    return
 
-  let result = await compiler.next()
+  try {
+    const [input] = request.params as [string]
 
-  while (result.done === false) {
-    await using stack = new AsyncDisposableStack()
+    const compiler = compile(input)
 
-    const dummy = path.resolve(path.join(path.dirname(entrypoint), `${crypto.randomUUID().slice(0, 8)}.${path.basename(entrypoint)}`))
+    let result = await compiler.next()
 
-    await writeFile(dummy, `const $$ = (callback) => callback(); export const output = await ${result.value};`, "utf8")
+    while (result.done === false) {
+      const output = await fetch<string>({
+        method: "execute",
+        params: [`const $$ = (callback) => callback(); export const output = await ${result.value};`]
+      }, self).then(r => r.getOrThrow())
 
-    stack.defer(async () => await rm(dummy, { force: true }))
+      result = await compiler.next(output)
+    }
 
-    const { output } = await import(dummy)
+    const output = result.value
 
-    if (typeof output !== "string")
-      throw new Error(`Macro returned ${typeof output} instead of string`)
+    const response = new RpcOk(request.id, output)
 
-    result = await compiler.next(output)
+    self.postMessage(JSON.stringify(response))
+  } catch (e: unknown) {
+    const error = RpcError.rewrap(e)
+
+    const response = new RpcErr(request.id, error)
+
+    self.postMessage(JSON.stringify(response))
   }
-
-  const output = result.value
-
-  const extname = path.extname(entrypoint).slice(1)
-  const rawname = path.basename(entrypoint, `.macro.${extname}`)
-
-  const exitpoint = path.join(path.dirname(entrypoint), `./${rawname}.${extname}`)
-
-  await writeFile(exitpoint, output, "utf8")
-
-  self.postMessage({})
 })

@@ -1,0 +1,68 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@hazae41/jsonrpc@^1.1.10": "1.1.10",
+    "jsr:@hazae41/result-and-option@^2.0.10": "2.0.10",
+    "jsr:@hazae41/tscousin@^1.0.28": "1.0.28",
+    "npm:@hazae41/jsonrpc@^1.1.10": "1.1.10",
+    "npm:@hazae41/tscousin@^1.0.28": "1.0.28",
+    "npm:@types/node@^24.8.1": "24.9.1",
+    "npm:typescript@^5.9.3": "5.9.3"
+  },
+  "jsr": {
+    "@hazae41/jsonrpc@1.1.10": {
+      "integrity": "d12d2a5b33b359f23327e30a5e13bd129e11d010a9333b638219df8fa68e5d42",
+      "dependencies": [
+        "jsr:@hazae41/result-and-option"
+      ]
+    },
+    "@hazae41/result-and-option@2.0.10": {
+      "integrity": "4a5046c435aad139014959315dd92fe7cf9bcc14fa975361c66b8d8303e4d583"
+    },
+    "@hazae41/tscousin@1.0.28": {
+      "integrity": "5218915c136dd5c2b155cec4cdc38915a6cee42db17f3598ad35f47a19afb928"
+    }
+  },
+  "npm": {
+    "@hazae41/jsonrpc@1.1.10": {
+      "integrity": "sha512-+UK9ZeBUDcEKrvNMcLyxgQ2HFHgiQbRvuhShtb0oqEsM28zy70VXjSTsjlFHnGRrDE1PGiRM+Wb3ZOX0rH4IYA==",
+      "dependencies": [
+        "@hazae41/result-and-option"
+      ]
+    },
+    "@hazae41/result-and-option@2.0.10": {
+      "integrity": "sha512-Msf15N4OBCSsAxdonghJmbwERQqgc0ZWVPi1yE+oI8maC1FBFacQrym+xNF+lnXXgaTheLAUnx3B8yCA5Z1EWw=="
+    },
+    "@hazae41/tscousin@1.0.28": {
+      "integrity": "sha512-Wrg/66m0hLexrifpzJ5a/D7Jzb7FhLzBWrCFAgjZa+DIU8prA5rX4MwD5K34UZ6jsYBRZsYwNeVEYRqOIJHOEQ==",
+      "bin": true
+    },
+    "@types/node@24.9.1": {
+      "integrity": "sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
+    "typescript@5.9.3": {
+      "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+      "bin": true
+    },
+    "undici-types@7.16.0": {
+      "integrity": "sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "jsr:@hazae41/jsonrpc@^1.1.10",
+      "jsr:@hazae41/tscousin@^1.0.28"
+    ],
+    "packageJson": {
+      "dependencies": [
+        "npm:@hazae41/jsonrpc@^1.1.10",
+        "npm:@hazae41/tscousin@^1.0.28",
+        "npm:@types/node@^24.8.1",
+        "npm:typescript@^5.9.3"
+      ]
+    }
+  }
+}

@@ -2,7 +2,9 @@
   "name": "@hazae41/saumon",
   "version": "1.0.13",
   "imports": {
-    "@/": "./src/"
+    "@/": "./src/",
+    "@hazae41/jsonrpc": "jsr:@hazae41/jsonrpc@^1.1.10",
+    "@hazae41/tscousin": "jsr:@hazae41/tscousin@^1.0.28"
   },
   "exports": {
     ".": "./src/mod.ts",
