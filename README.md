@@ -7,7 +7,7 @@ npm install @hazae41/saumon
 ```
 
 ```bash
-deno install jsr:@hazae41/saumon
+deno install -gfn saumon -RW jsr:@hazae41/saumon/bin
 ```
 
 [**📦 NPM**](https://www.npmjs.com/package/@hazae41/saumon) • [**📦 JSR**](https://jsr.io/@hazae41/saumon)
