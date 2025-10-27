@@ -9,6 +9,8 @@ import process from "node:process";
 import { fetch } from "./libs/rpc/mod.ts";
 import { parse } from "./mods/parser/mod.ts";
 
+process.addListener("SIGINT", () => process.exit(0))
+
 const module = new URL("./mods/runner/mod.ts", import.meta.url)
 
 const spawn = async (entrypoint: string) => {
