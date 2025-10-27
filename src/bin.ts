@@ -2,7 +2,8 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { readFile, rm, writeFile } from "node:fs/promises";
+import { rmSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fetch } from "./libs/rpc/mod.ts";
@@ -28,9 +29,9 @@ const spawn = async (entrypoint: string) => {
     const name = `${crypto.randomUUID().slice(0, 8)}.${path.basename(entrypoint)}`
     const file = path.resolve(path.join(path.dirname(entrypoint), name))
 
-    await writeFile(file, code, "utf8")
+    process.addListener("exit", () => rmSync(file, { force: true }))
 
-    stack.defer(async () => await rm(file, { force: true }))
+    await writeFile(file, code, "utf8")
 
     const permissions = {
       read: [process.cwd()],
