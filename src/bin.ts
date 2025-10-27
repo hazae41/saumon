@@ -6,24 +6,7 @@ import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fetch } from "./libs/rpc/mod.ts";
-import { parse } from "./mods/compiler/mod.ts";
-
-const args = process.argv.slice(2)
-
-const paths = new Array<string>()
-
-const options: {
-  debug?: boolean
-} = {}
-
-for (const arg of args) {
-  if (arg === "-d" || arg === "--debug") {
-    options.debug = true
-    continue
-  }
-
-  paths.push(arg)
-}
+import { parse } from "./mods/parser/mod.ts";
 
 const module = new URL("./mods/runner/mod.ts", import.meta.url)
 
@@ -83,7 +66,7 @@ const spawn = async (entrypoint: string) => {
 
 const spawns = new Array<Promise<void>>()
 
-for (const path of paths)
+for (const path of process.argv.slice(2))
   spawns.push(spawn(path))
 
 await Promise.all(spawns)

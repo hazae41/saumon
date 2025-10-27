@@ -1,1 +1,0 @@
-const $$ = (callback) => callback(); export const output = await $$(() => fetch("https://dummyjson.com/products/1").then(r => r.json()).then(JSON.stringify));

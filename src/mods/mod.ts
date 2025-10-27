@@ -1,2 +1,2 @@
-export * from "./compiler/mod.ts";
+export * from "./parser/mod.ts";
 
