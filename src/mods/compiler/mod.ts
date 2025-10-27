@@ -44,7 +44,7 @@ function readNextCall(text: string, regexes: Array<[number, number]>, start: num
   return call
 }
 
-export async function* compile(text: string): AsyncGenerator<string, string, string> {
+export async function* parse(text: string): AsyncGenerator<string, string, string> {
   while (true) {
     const regexes = getRegexes(text)
 

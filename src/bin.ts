@@ -2,11 +2,11 @@
 
 // deno-lint-ignore-file no-explicit-any
 
-import { RpcErr, RpcError, RpcOk, RpcRequest } from "@hazae41/jsonrpc";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fetch } from "./libs/rpc/mod.ts";
+import { parse } from "./mods/compiler/mod.ts";
 
 const args = process.argv.slice(2)
 
@@ -25,71 +25,53 @@ for (const arg of args) {
   paths.push(arg)
 }
 
-const module = new URL("./mods/worker/mod.ts", import.meta.url)
+const module = new URL("./mods/runner/mod.ts", import.meta.url)
 
 const spawn = async (entrypoint: string) => {
-  using stack = new DisposableStack()
-
-  const aborter = new AbortController()
-  stack.defer(() => aborter.abort())
-
   if (!/\.macro\.(c|m)?(t|j)s(x?)$/.test(entrypoint))
     throw new Error(`Not a macro file`)
 
   const input = await readFile(entrypoint, "utf8")
 
-  const worker = new Worker(module, {
-    type: "module",
-    deno: { permissions: "none" }
-  } as any)
+  const compiler = parse(input)
 
-  stack.defer(() => worker.terminate())
+  let result = await compiler.next()
 
-  const compile = fetch<string>({
-    method: "compile",
-    params: [input]
-  }, worker, aborter.signal)
+  while (result.done === false) {
+    using stack = new DisposableStack()
 
-  worker.addEventListener("message", async (event) => {
-    const message = event as MessageEvent<string>
-    const reqinit = JSON.parse(message.data)
+    const code = `const $$ = (callback) => callback(); export const output = await ${result.value};`
 
-    if ("method" in reqinit === false)
-      return
+    const name = `${crypto.randomUUID().slice(0, 8)}.${path.basename(entrypoint)}`
+    const file = path.resolve(path.join(path.dirname(entrypoint), name))
 
-    const request = RpcRequest.from(reqinit)
+    await writeFile(file, code, "utf8")
 
-    if (request.method !== "execute")
-      return
+    stack.defer(async () => await rm(file, { force: true }))
 
-    try {
-      const [code] = request.params as [string]
+    const permissions = {
+      read: [process.cwd()],
+    } as any
 
-      const name = `${crypto.randomUUID().slice(0, 8)}.${path.basename(entrypoint)}`
-      const file = path.resolve(path.join(path.dirname(entrypoint), name))
+    const worker = new Worker(module, {
+      type: "module",
+      deno: { permissions }
+    } as any)
 
-      await writeFile(file, code, "utf8")
+    stack.defer(() => worker.terminate())
 
-      stack.defer(async () => await rm(file, { force: true }))
+    const output = await fetch<string>({
+      method: "execute",
+      params: [file]
+    }, worker).then(r => r.getOrThrow())
 
-      const { output } = await import(file)
+    if (typeof output !== "string")
+      throw new Error("Macro returned non-string output")
 
-      if (typeof output !== "string")
-        throw new Error(`Macro returned ${typeof output} instead of string`)
+    result = await compiler.next(output)
+  }
 
-      const response = new RpcOk(request.id, output)
-
-      worker.postMessage(JSON.stringify(response))
-    } catch (e: unknown) {
-      const error = RpcError.rewrap(e)
-
-      const response = new RpcErr(request.id, error)
-
-      worker.postMessage(JSON.stringify(response))
-    }
-  }, { passive: true, signal: aborter.signal })
-
-  const output = await compile.then(r => r.getOrThrow())
+  const output = result.value
 
   const extname = path.extname(entrypoint).slice(1)
   const rawname = path.basename(entrypoint, `.macro.${extname}`)

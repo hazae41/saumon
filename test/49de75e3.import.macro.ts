@@ -1,0 +1,1 @@
+const $$ = (callback) => callback(); export const output = await $$(async () => await import("./libs/log.ts").then(m => m.$log$("lol")));

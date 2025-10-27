@@ -1,5 +1,3 @@
-import { fetch } from "@/libs/rpc/mod.ts";
-import { compile } from "@/mods/compiler/mod.ts";
 import { RpcErr, RpcError, RpcOk, RpcRequest } from "@hazae41/jsonrpc";
 
 self.addEventListener("message", async (event: Event) => {
@@ -11,26 +9,13 @@ self.addEventListener("message", async (event: Event) => {
 
   const request = RpcRequest.from(reqinit)
 
-  if (request.method !== "compile")
+  if (request.method !== "execute")
     return
 
   try {
     const [input] = request.params as [string]
 
-    const compiler = compile(input)
-
-    let result = await compiler.next()
-
-    while (result.done === false) {
-      const output = await fetch<string>({
-        method: "execute",
-        params: [`const $$ = (callback) => callback(); export const output = await ${result.value};`]
-      }, self).then(r => r.getOrThrow())
-
-      result = await compiler.next(output)
-    }
-
-    const output = result.value
+    const { output } = await import(input)
 
     const response = new RpcOk(request.id, output)
 

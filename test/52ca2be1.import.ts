@@ -1,0 +1,1 @@
+const $$ = (callback) => callback(); export const output = await console.log("lol");
