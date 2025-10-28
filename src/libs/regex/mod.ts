@@ -1,7 +1,5 @@
-import type { Slice } from "../cursor/mod.ts";
-
 export function getAllRegexes(text: string) {
-  const regexes = new Array<Slice>()
+  const regexes = new Array<[number, number]>()
 
   let index = 0
   let slice = text

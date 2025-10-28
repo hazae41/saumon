@@ -40,9 +40,7 @@ export function isLineCommentedAt(cursor: Cursor) {
   return cursor.text.slice(cursor.offset, cursor.offset + "//".length) === "//"
 }
 
-export type Slice = [number, number]
-
-export function getSliceAt(cursor: Cursor, slices: Array<Slice>) {
+export function getSliceAt(cursor: Cursor, slices: Array<[number, number]>) {
   for (const slice of slices) {
     const [start, end] = slice
 
