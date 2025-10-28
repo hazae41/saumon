@@ -1,34 +1,33 @@
 import { all } from "@/libs/chars/mod.ts";
-import { curse } from "@/libs/cursor/mod.ts";
 import { getAllRegexes } from "@/libs/regex/mod.ts";
 import { replace } from "@/libs/replace/mod.ts";
+import { Cursor } from "../../libs/cursor/mod.ts";
 
-function readNextCall(text: string, regexes: Array<[number, number]>, start: number) {
+function readNextCall(text: string, index: number, regexes: Array<[number, number]>) {
   let call = ""
   let depth = 0
 
-  const cursor = { value: 0 }
-  const cursed = curse(text, cursor)
+  const cursor = new Cursor(text)
 
-  for (const type of all(text, cursor, cursed, regexes)) {
-    if (cursor.value < start)
+  for (const type of all(cursor, regexes)) {
+    if (cursor.offset < index)
       continue
-    if (cursor.value === start && type !== "code")
+    if (cursor.offset === index && type !== "code")
       return
 
     if (type !== "code") {
-      call += text[cursor.value]
+      call += cursor.text[cursor.offset]
       continue
     }
 
-    call += text[cursor.value]
+    call += cursor.text[cursor.offset]
 
-    if (text[cursor.value] === "(") {
+    if (cursor.text[cursor.offset] === "(") {
       depth++
       continue
     }
 
-    if (text[cursor.value] === ")") {
+    if (cursor.text[cursor.offset] === ")") {
       depth--
       if (depth === 0)
         break
@@ -74,7 +73,7 @@ export async function* parse(text: string): AsyncGenerator<string, string, strin
       if (declaration)
         continue
 
-      const call = readNextCall(text, regexes, match.index)
+      const call = readNextCall(text, match.index, regexes)
 
       /**
        * Call is probably in a quote or in a comment

@@ -1,38 +1,55 @@
-export interface Cursor {
-  value: number
+export class Cursor {
+
+  offset = 0
+
+  #iterator: Iterator<void>
+
+  constructor(
+    readonly text: string
+  ) {
+    this.#iterator = this.#start()
+  }
+
+  *#start() {
+    for (; this.offset < this.text.length; this.offset++) yield
+  }
+
+  next() {
+    return this.#iterator.next()
+  }
+
+  [Symbol.iterator]() {
+    return this
+  }
+
 }
 
-export function* curse(text: string, cursor: Cursor): Iterable<void> {
-  for (; cursor.value < text.length; cursor.value++)
-    yield
+export function isEscapedAt(cursor: Cursor) {
+  return cursor.text[cursor.offset - 1] === "\\" && cursor.text[cursor.offset - 2] !== "\\"
 }
 
-export function isEscapedAt(text: string, cursor: Cursor) {
-  return text[cursor.value - 1] === "\\" && text[cursor.value - 2] !== "\\"
+export function isStartBlockCommentedAt(cursor: Cursor) {
+  return cursor.text.slice(cursor.offset, cursor.offset + "/*".length) === "/*"
 }
 
-export function isStartBlockCommentedAt(text: string, cursor: Cursor) {
-  return text.slice(cursor.value, cursor.value + "/*".length) === "/*"
+export function isEndBlockCommentedAt(cursor: Cursor) {
+  return cursor.text.slice(cursor.offset + 1 - "*/".length, cursor.offset + 1) === "*/"
 }
 
-export function isEndBlockCommentedAt(text: string, cursor: Cursor) {
-  return text.slice(cursor.value + 1 - "*/".length, cursor.value + 1) === "*/"
-}
-
-export function isLineCommentedAt(text: string, cursor: Cursor) {
-  return text.slice(cursor.value, cursor.value + "//".length) === "//"
+export function isLineCommentedAt(cursor: Cursor) {
+  return cursor.text.slice(cursor.offset, cursor.offset + "//".length) === "//"
 }
 
 export type Slice = [number, number]
 
-export function getSliceAt(slices: Array<Slice>, cursor: Cursor) {
+export function getSliceAt(cursor: Cursor, slices: Array<Slice>) {
   for (const slice of slices) {
     const [start, end] = slice
 
-    if (cursor.value < start)
+    if (cursor.offset < start)
       return
 
-    if (cursor.value < end)
+    if (cursor.offset < end)
       return slice
 
     continue

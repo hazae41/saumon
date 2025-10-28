@@ -1,4 +1,3 @@
-import { unclose } from "@/libs/unclose/mod.ts";
 import { getSliceAt, isEndBlockCommentedAt, isEscapedAt, isLineCommentedAt, isStartBlockCommentedAt, type Cursor } from "../cursor/mod.ts";
 
 export type CharType =
@@ -10,38 +9,33 @@ export type CharType =
   | "single-quoted"
   | "double-quoted"
 
-export function* loop<T>(cursor: Cursor, cursed: Iterable<void>, value: T, until: number): Generator<T> {
-  for (const _ of unclose(cursed)) {
-    if (cursor.value === until)
+export function* loop<T>(cursor: Cursor, value: T, until: number): Generator<T> {
+  for (const _ of cursor) {
+    if (cursor.offset === until)
       break
     yield value
   }
 }
 
-function* allLineCommented(text: string, cursor: Cursor, cursed: Iterable<void>): Generator<"line-commented"> {
+function* allLineCommented(cursor: Cursor): Generator<"line-commented"> {
   const type = "line-commented"
+
   yield type
 
-  /**
-   * Yield until end
-   */
-  for (const _ of unclose(cursed)) {
-    if (text[cursor.value] === "\n")
+  for (const _ of cursor) {
+    if (cursor.text[cursor.offset] === "\n")
       break
-
     yield type
   }
 }
 
-export function* allBlockCommented(text: string, cursor: Cursor, cursed: Iterable<void>): Generator<"block-commented"> {
+export function* allBlockCommented(cursor: Cursor): Generator<"block-commented"> {
   const type = "block-commented"
+
   yield type
 
-  /**
-   * Yield until end
-   */
-  for (const _ of unclose(cursed)) {
-    if (isEndBlockCommentedAt(text, cursor)) {
+  for (const _ of cursor) {
+    if (isEndBlockCommentedAt(cursor)) {
       yield type
       break
     }
@@ -50,18 +44,16 @@ export function* allBlockCommented(text: string, cursor: Cursor, cursed: Iterabl
   }
 }
 
-function* allDoubleQuoted(text: string, cursor: Cursor, cursed: Iterable<void>): Generator<"double-quoted"> {
+function* allDoubleQuoted(cursor: Cursor): Generator<"double-quoted"> {
   const type = "double-quoted"
+
   yield type
 
-  /**
-   * Yield until end
-   */
-  for (const _ of unclose(cursed)) {
-    if (text[cursor.value] === "\n")
+  for (const _ of cursor) {
+    if (cursor.text[cursor.offset] === "\n")
       break
 
-    if (!isEscapedAt(text, cursor) && text[cursor.value] === '"') {
+    if (!isEscapedAt(cursor) && cursor.text[cursor.offset] === '"') {
       yield type
       break
     }
@@ -70,18 +62,16 @@ function* allDoubleQuoted(text: string, cursor: Cursor, cursed: Iterable<void>):
   }
 }
 
-function* allSingleQuoted(text: string, cursor: Cursor, cursed: Iterable<void>): Generator<"single-quoted"> {
+function* allSingleQuoted(cursor: Cursor): Generator<"single-quoted"> {
   const type = "single-quoted"
+
   yield type
 
-  /**
-   * Yield until end
-   */
-  for (const _ of unclose(cursed)) {
-    if (text[cursor.value] === "\n")
+  for (const _ of cursor) {
+    if (cursor.text[cursor.offset] === "\n")
       break
 
-    if (!isEscapedAt(text, cursor) && text[cursor.value] === "'") {
+    if (!isEscapedAt(cursor) && cursor.text[cursor.offset] === "'") {
       yield type
       break
     }
@@ -90,34 +80,32 @@ function* allSingleQuoted(text: string, cursor: Cursor, cursed: Iterable<void>):
   }
 }
 
-function* allTemplateQuoted(text: string, cursor: Cursor, cursed: Iterable<void>, regexes: Array<[number, number]>): Generator<CharType> {
+function* allTemplateQuoted(cursor: Cursor, regexes: Array<[number, number]>): Generator<CharType> {
   const type = "template-quoted"
+
   yield type
 
-  /**
-   * Yield until end
-   */
-  for (const _ of unclose(cursed)) {
-    if (!isEscapedAt(text, cursor) && text[cursor.value] === "$" && text[cursor.value + 1] === "{") {
+  for (const _ of cursor) {
+    if (!isEscapedAt(cursor) && cursor.text[cursor.offset] === "$" && cursor.text[cursor.offset + 1] === "{") {
       yield type
-      cursor.value++
+      cursor.offset++
       yield type
 
       let depth = 1
 
-      for (const type of all(text, cursor, cursed, regexes)) {
+      for (const type of all(cursor, regexes)) {
         if (type !== "code") {
           yield type
           continue
         }
 
-        if (text[cursor.value] === "{") {
+        if (cursor.text[cursor.offset] === "{") {
           depth++
           yield type
           continue
         }
 
-        if (text[cursor.value] === "}") {
+        if (cursor.text[cursor.offset] === "}") {
           depth--
 
           if (depth === 0)
@@ -135,7 +123,7 @@ function* allTemplateQuoted(text: string, cursor: Cursor, cursed: Iterable<void>
       continue
     }
 
-    if (!isEscapedAt(text, cursor) && text[cursor.value] === "`") {
+    if (!isEscapedAt(cursor) && cursor.text[cursor.offset] === "`") {
       yield type
       break
     }
@@ -144,39 +132,39 @@ function* allTemplateQuoted(text: string, cursor: Cursor, cursed: Iterable<void>
   }
 }
 
-export function* all(text: string, cursor: Cursor, cursed: Iterable<void>, regexes: Array<[number, number]>): Generator<CharType> {
-  for (const _ of unclose(cursed)) {
-    if (text[cursor.value] === "`") {
-      yield* allTemplateQuoted(text, cursor, cursed, regexes)
+export function* all(cursor: Cursor, regexes: Array<[number, number]>): Generator<CharType> {
+  for (const _ of cursor) {
+    if (cursor.text[cursor.offset] === "`") {
+      yield* allTemplateQuoted(cursor, regexes)
       continue
     }
 
-    if (text[cursor.value] === "'") {
-      yield* allSingleQuoted(text, cursor, cursed)
+    if (cursor.text[cursor.offset] === "'") {
+      yield* allSingleQuoted(cursor)
       continue
     }
 
-    if (text[cursor.value] === '"') {
-      yield* allDoubleQuoted(text, cursor, cursed)
+    if (cursor.text[cursor.offset] === '"') {
+      yield* allDoubleQuoted(cursor)
       continue
     }
 
-    if (isStartBlockCommentedAt(text, cursor)) {
-      yield* allBlockCommented(text, cursor, cursed)
+    if (isStartBlockCommentedAt(cursor)) {
+      yield* allBlockCommented(cursor)
       continue
     }
 
-    if (isLineCommentedAt(text, cursor)) {
-      yield* allLineCommented(text, cursor, cursed)
+    if (isLineCommentedAt(cursor)) {
+      yield* allLineCommented(cursor)
       continue
     }
 
-    const regex = getSliceAt(regexes, cursor)
+    const regex = getSliceAt(cursor, regexes)
 
     if (regex != null) {
       const [_start, end] = regex
 
-      yield* loop(cursor, cursed, "regex", end)
+      yield* loop(cursor, "regex", end)
 
       continue
     }
