@@ -1,7 +1,5 @@
 #!/usr/bin/env deno run -RW
 
-// deno-lint-ignore-file no-explicit-any
-
 import { rmSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -9,7 +7,15 @@ import process from "node:process";
 import { fetch } from "./libs/rpc/mod.ts";
 import { parse } from "./mods/parser/mod.ts";
 
-process.addListener("SIGINT", () => process.exit(0))
+using stack = new DisposableStack()
+
+process.addListener("exit", () => stack.dispose())
+
+process.addListener("SIGINT", () => process.exit(1))
+process.addListener("SIGTERM", () => process.exit(1))
+
+addEventListener("unhandledrejection", () => stack.dispose())
+addEventListener("error", () => stack.dispose())
 
 const module = new URL("./mods/runner/mod.ts", import.meta.url)
 
@@ -21,27 +27,28 @@ const spawn = async (entrypoint: string) => {
   let result = await compiler.next()
 
   while (result.done === false) {
-    using stack = new DisposableStack()
+    using substack = new DisposableStack()
 
     const code = `const $$ = (callback) => callback(); export const output = await ${result.value};`
 
     const name = `${crypto.randomUUID().slice(0, 8)}.${path.basename(entrypoint)}`
     const file = path.resolve(path.join(path.dirname(entrypoint), name))
 
-    process.addListener("exit", () => rmSync(file, { force: true }))
-
     await writeFile(file, code, "utf8")
 
+    stack.defer(() => rmSync(file, { force: true }))
+
     const permissions = {
-      read: [process.cwd()],
-    } as any
+      read: [file]
+    } as unknown
 
     const worker = new Worker(module, {
       type: "module",
+      name: file,
       deno: { permissions }
-    } as any)
+    } as unknown as WorkerOptions)
 
-    stack.defer(() => worker.terminate())
+    substack.defer(() => worker.terminate())
 
     const output = await fetch<string>({
       method: "execute",
@@ -54,7 +61,7 @@ const spawn = async (entrypoint: string) => {
     result = await compiler.next(output)
   }
 
-  const output = result.value
+  const output = result.value.replaceAll(/import { ?\$\$ ?} from ["'](.+)["'];?\n+/g, "")
 
   const extname = path.extname(entrypoint).slice(1)
   const rawname = path.basename(entrypoint, `.macro.${extname}`)

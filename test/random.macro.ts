@@ -1,3 +1,3 @@
-declare function $$<T>(callback: () => string): T
+import { $$ } from "@/mods/types/mod.ts";
 
 export const x = $$<number>(() => `${Math.random()}`) * 100

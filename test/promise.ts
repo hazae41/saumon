@@ -1,0 +1,1 @@
+const x = await Promise.resolve(123)

@@ -14,7 +14,7 @@ deno install -gfn saumon -RW jsr:@hazae41/saumon/bin
 
 ## Goals
 - Ultra simple and minimalist
-- Ultra fast thanks to [Bun](https://bun.sh)
+- Secured with Deno permissions
 - Won't interfere with your existing tools
 - Can output arbitrary code (TypeScript types, JSX components, JSON data)
 - Resistant to supply-chain attacks
@@ -40,6 +40,8 @@ const data = { ... }
 `log.macro.ts` (input)
 
 ```ts
+import { $$ } from "@hazae41/saumon"
+
 $$(() => `console.log("hello world")`)
 ```
 
@@ -55,12 +57,6 @@ A macro is like a regular JS function, but the compiler will replace all its cal
 
 ### CLI
 
-You need to install Deno
-
-```bash
-npm install -g deno
-```
-
 You can transform a single file
 
 ```bash
@@ -73,49 +69,41 @@ Or a whole directory
 saumon ./src/**/**
 ```
 
+### TypeScript support
+
+If you want to transform TypeScript code, ensure your runtime allows you to dynamically `import()` TypeScript
+
+- Deno, focused on security, can import TypeScript (recommended)
+
+- Bun, focused on performances, can import TypeScript
+
+- Node, focused on compatibility, can't import TypeScript (as of 2025, it only supports type-stripping)
+
 ### Files 
 
 The compiler will only transform files with `.macro.*` extensions
 
-### Definition
+This is good for performances because it won't parse all your code
 
-All macros must be named with one dollar before and one dollar after their name
-
-```ts
-function $log$(x: string) {
-  return `console.log("${x}")`
-}
-```
+And this is good for security because it will only run code in there
 
 ### Typing
 
-#### You can spoof the returned type to avoid warnings while you code
+All macros must be called with `$$(() => Awaitable<string>)`
 
 ```ts
-function $random$(): number {
-  return `${Math.random()}` as any
-}
+export declare function $$<T>(f: () => Awaitable<string>): T
 ```
+
+You can spoof the returned type to avoid warnings while you code
 
 ```ts
-const x = $random$() * 100
+const x = $$<number>(() => `${Math.random()}`) * 100
 ```
 
-### In-file macro
+### Imports
 
-#### You can define and call a macro in the same macro file
-
-```ts
-function $log$(x: string) {
-  return `console.log("${x}")`
-}
-
-$log$("hello world")
-```
-
-### Imported macro
-
-#### You can export a macro (from any file) and import it in a macro file
+#### You can import anything in a macro call
 
 `log.ts`
 
@@ -128,151 +116,27 @@ export function $log$(x: string) {
 `main.macro.ts`
 
 ```ts
-import { $log$ } from "./log.ts"
+import { $$ } from "@hazae41/saumon"
 
-$log$("hello from the main file")
+$$(async () => {
+  const { $log$ } = await import("./log.ts")
+
+  return $log$("hello world")
+})
 ```
 
-#### You can even import macros from libraries
+#### You can even import things from libraries
 
 `main.macro.ts`
 
 ```ts
-import { $log$ } from "some-lib"
+import { $$ } from "@hazae41/saumon"
 
-$log$("hello from the main file")
-```
+$$(async () => {
+  const { $log$ } = await import("some-lib")
 
-#### You can also define a macro, export it, and use it in the same macro file
-
-`log.macro.ts`
-
-```ts
-export function $log$(x: string) {
-  return `console.log("${x}")`
-}
-
-$log$("hello from the log file")
-```
-
-`main.macro.ts`
-
-```ts
-import { $log$ } from "./log.ts"
-
-$log$("hello from the main file")
-```
-
-### Comment blocks
-
-All comment blocks must start with `/*` or `/**` in the first line and `@macro` in the second line, and end with `*/`
-
-#### You can also inject arbitrary code in the comment block
-
-This instruction will uncomment the given code and reparse the file
-
-`enabled.macro.ts`
-
-```ts
-const enabled = true
-
-/**
- * @macro uncomment
- * if (!enabled) {
- *   return exit(0)
- * }
- */
-```
-
-`enabled.ts`
-
-```ts
-const enabled = true
-
-if (!enabled) {
-   return exit(0)
-}
-```
-
-You can use it to run macros in places where you are not supposed to call functions
-
-`something.macro.ts`
-
-```ts
-function $log$(x: string) {
-  return `log() {
-    console.log("${x}")
-  }`
-}
-
-class Something {
-
-  /**
-   * @macro uncomment
-   * $log$("hello world")
-   */
-
-}
-```
-
-`something.ts`
-
-```ts
-class Something {
-
-  log() {
-    console.log("hello world")
-  }
-
-}
-```
-
-#### You can delete lines
-
-This instruction will delete all the lines next to it until `\n\n` (or end of file)
-
-```ts
-/**
- * @macro delete-next-lines
- */
-console.log("i will be deleted")
-console.log("i will be deleted too")
-```
-
-You can use it to clean imports that are only used in macros
-
-```ts
-/**
- * @macro delete-next-lines
- */
-import { $log$ } from "./macros/log.ts"
-import { $hello$ } from "./macros/hello.ts"
-
-$log$($hello$())
-```
-
-```ts
-console.log("hello world")
-```
-
-### Generic
-
-#### You can use generic macro functions
-
-`parse.macro.ts`
-
-```ts
-function $parse$<T>(x: string): T {
-  return JSON.stringify(JSON.parse(x)) as any
-}
-
-export const data = $parse$<{ id: number }>(`{"id":123}`)
-```
-
-`parse.ts`
-
-```ts
-export const data = {"id":123}
+  return $log$("hello world")
+})
 ```
 
 ### Async
@@ -284,16 +148,9 @@ Just return a Promise and the compiler will wait for it
 `fetch.macro.ts`
 
 ```ts
-function $fetch$<T>(url: string): T {
-  return (async () => {
-    const response = await fetch(url)
-    const object = await response.json()
+import { $$ } from "@hazae41/saumon"
 
-    return JSON.stringify(object)
-  })() as any
-}
-
-export const data = $fetch$<{ id: number }>("https://dummyjson.com/products/1")
+const data = $$(() => fetch("https://dummyjson.com/products/1").then(r => r.json()).then(JSON.stringify))
 ```
 
 `fetch.ts`
@@ -304,218 +161,71 @@ export const data = { "id": 1 }
 
 #### You can also await macroed code
 
-```ts
-function $f$(): Promise<number> {
-  return `Promise.resolve(123)` as any
-}
+`promise.macro.ts`
 
-await $f$()
+```ts
+import { $$ } from "@hazae41/saumon"
+
+const x = await $$<Promise<number>>(() => `Promise.resolve(123)`)
 ```
 
-### Dynamic
-
-You can run dynamic code thanks to callbacks
+`promise.ts`
 
 ```tsx
-function $run$<T>(callback: () => T): Awaited<T> {
-  return (async () => {
-    return JSON.stringify(await callback())
-  })() as any
-}
+const x = await Promise.resolve(123)
 ```
 
-```tsx
-const data = $run$(() => fetch("/api/data").then(r => r.json()))
-```
+#### Shared variables
 
-For your convenience, Saumon exports the `$run$` macro so you can just import it
+When calling a macro, in-file local variables are NOT accessible
 
-```tsx
-import { $run$ } from "@hazae41/saumon"
-```
+This is because macro calls are ran isolated from their surrounding code (in a worker)
 
-### Constraints on in-file macro calls
+They can still access imports, so you can put shared things in some file, and/or pass them
 
-Those constraints only apply when calling in-file macros, not when calling imported macros
-
-#### Regular functions
-
-When calling an in-file macro, it MUST be defined as a regular function
-
-❌
+`x.ts`
 
 ```ts
-export const $log$ = function () {
-  return `console.log("hey")`
-}
-```
-
-❌
-
-```ts
-export const $log$ = () => {
-  return `console.log("hey")`
-}
-```
-
-✅
-
-```ts
-export function $log$() {
-  return `console.log("hey")`
-}
-```
-
-#### Top-level definition
-
-When calling an in-file macro, it SHOULD be defined at top-level to avoid name conflicts
-
-This is because the parser can't do code analysis to find which macro you want to use
-
-❌
-
-```ts
-function f() {
-
-  function $log$() {
-    return `console.log("hey")`
-  }
-
-  $log$()
-}
-
-function g() {
-
-  function $log$() {
-    return `console.log("hey")`
-  }
-
-  $log$()
-}
-```
-
-✅
-
-```ts
-function $log$() {
-  return `console.log("hey")`
-}
-
-function f() {
-  $log$()
-}
-
-function g() {
-  $log$()
-}
-```
-
-#### Local variables
-
-When calling a macro in-file, variables MUST be primitive, global, or imported
-
-This is because macro definitions and calls are ran isolated from their surrounding code
-
-They can still access global variables and imports
-
-❌ Calling an in-file macro that uses local variables
-
-```ts
-const debugging = true
-
-function $debug$(x: string) {
-  if (!debugging)
-    return
-  return `console.debug("${x}")`
-}
-
-$debug$("hey")
-```
-
-✅ Calling an in-file macro that uses global or imported variables
-
-```ts
-import { debugging } from "./debugging.ts"
-
-function $debug$(x: string) {
-  if (!debugging)
-    return
-  return `console.debug("${x}")`
-}
-
-$debug$("hey")
-```
-
-✅ Calling an imported macro
-
-`debug.ts`
-
-```ts
-const debugging = true
-
-export function $debug$(x: string) {
-  if (!debugging)
-    return
-  return `console.debug("${x}")`
-}
+export const x = Math.random()
 ```
 
 `main.macro.ts`
 
 ```ts
-import { $debug$ } from "./debug.ts"
+import { $$ } from "@hazae41/saumon"
 
-$debug$("hey")
+const x = $$<number>(async () => {
+  const { x } = await import("./x.ts")
+
+  console.log(`x is ${x}`)
+
+  return `${x}`
+})
+
+console.log(`x is ${x}`) // exact same as above
 ```
 
-Similarly, passed parameters MUST also be primitive, global, or imported (and their type too)
+### Permissions
 
-❌ Calling an in-file macro whose parameters are local
+If you use Deno as your runtime, you can benefit from it's permissions based-security
 
-```ts
-class X {}
-
-function $log$(i: number, x: X) {
-  return `console.log(${i}, "${JSON.stringify(x)}")`
-}
-
-$log$(123, new X())
+```bash
+$ deno run -RW ./src/bin.ts ./test/fetch.macro.ts
+┏ ⚠️  Deno requests net access to "dummyjson.com:443".
+┠─ Requested by `fetch()` API.
+┠─ To see a stack trace for this prompt, set the DENO_TRACE_PERMISSIONS environmental variable.
+┠─ Learn more at: https://docs.deno.com/go/--allow-net
+┠─ Run again with --allow-net to bypass this prompt.
+┗ Allow? [y/n/A] (y = yes, allow; n = no, deny; A = allow all net permissions) > y
 ```
 
-✅ Calling an in-file macro whose parameters are imported
-
-```ts
-import type { X } from "./x.ts"
-import { x } from "./x.ts"
-
-function $log$(i: number, x: X) {
-  return `console.log(${i}, "${JSON.stringify(x)}")`
-}
-
-$log$(123, x)
+```bash
+✅ Granted net access to "dummyjson.com:443".
 ```
 
-✅ Calling an imported macro
+Each macro call will have its own independent permissions
 
-`log.ts`
-
-```ts
-export class X {}
-
-export function $log$(i: number, x: X) {
-  return `console.log(${i}, "${JSON.stringify(x)}")`
-}
-
-$log$(123, new X())
-```
-
-`main.macro.ts`
-
-```ts
-import { $log$, X } from "./log.ts"
-
-$log$(123, new X())
-```
+So when you type `A` it's always within the same macro call
 
 ## Security
 
