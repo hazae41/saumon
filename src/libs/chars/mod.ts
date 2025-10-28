@@ -162,9 +162,9 @@ export function* chars(cursor: Cursor, regexes: Array<[number, number]>): Genera
     const regex = getSliceAt(cursor, regexes)
 
     if (regex != null) {
-      const [_start, end] = regex
+      const [_, until] = regex
 
-      yield* loop(cursor, "regex", end)
+      yield* loop(cursor, "regex", until)
 
       continue
     }
