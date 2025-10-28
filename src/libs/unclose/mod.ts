@@ -1,4 +1,4 @@
-export function unclosed<T>(iterable: Iterable<T>) {
+export function unclose<T>(iterable: Iterable<T>) {
   const iterator = iterable[Symbol.iterator]()
   const next = iterator.next.bind(iterator)
 

@@ -1,34 +1,34 @@
-import { all, allTyped, getRegexes } from "@/libs/char/mod.ts";
-import { Strings } from "@/libs/strings/mod.ts";
+import { all } from "@/libs/chars/mod.ts";
+import { curse } from "@/libs/cursor/mod.ts";
+import { getAllRegexes } from "@/libs/regex/mod.ts";
+import { replace } from "@/libs/replace/mod.ts";
 
 function readNextCall(text: string, regexes: Array<[number, number]>, start: number) {
   let call = ""
   let depth = 0
 
-  const index = { value: 0 }
-  const iterable = all(text, index)
+  const cursor = { value: 0 }
+  const cursed = curse(text, cursor)
 
-  for (const type of allTyped(text, regexes, index, iterable)) {
-    if (index.value < start)
+  for (const type of all(text, cursor, cursed, regexes)) {
+    if (cursor.value < start)
       continue
-    if (index.value === start && type !== "code")
+    if (cursor.value === start && type !== "code")
       return
-    /**
-     * Do not check quoted
-     */
+
     if (type !== "code") {
-      call += text[index.value]
+      call += text[cursor.value]
       continue
     }
 
-    call += text[index.value]
+    call += text[cursor.value]
 
-    if (text[index.value] === "(") {
+    if (text[cursor.value] === "(") {
       depth++
       continue
     }
 
-    if (text[index.value] === ")") {
+    if (text[cursor.value] === ")") {
       depth--
       if (depth === 0)
         break
@@ -46,7 +46,7 @@ function readNextCall(text: string, regexes: Array<[number, number]>, start: num
 
 export async function* parse(text: string): AsyncGenerator<string, string, string> {
   while (true) {
-    const regexes = getRegexes(text)
+    const regexes = getAllRegexes(text)
 
     /**
      * Rematch all in case the previous macro call returned another macro call
@@ -87,7 +87,7 @@ export async function* parse(text: string): AsyncGenerator<string, string, strin
       /**
        * Apply
        */
-      text = Strings.replaceAt(text, call, output, match.index, match.index + call.length)
+      text = replace(text, call, output, match.index, match.index + call.length)
 
       /**
        * Restart because the content and indexes changed
