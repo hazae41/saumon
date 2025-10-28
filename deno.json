@@ -1,6 +1,6 @@
 {
   "name": "@hazae41/saumon",
-  "version": "1.0.13",
+  "version": "1.0.0",
   "imports": {
     "@/": "./src/",
     "@hazae41/jsonrpc": "jsr:@hazae41/jsonrpc@^1.1.10",
