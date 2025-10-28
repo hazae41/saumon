@@ -9,7 +9,7 @@ export type CharType =
   | "single-quoted"
   | "double-quoted"
 
-export function* loop<T>(cursor: Cursor, value: T, until: number): Generator<T> {
+function* loop<T>(cursor: Cursor, value: T, until: number): Generator<T> {
   for (const _ of cursor) {
     if (cursor.offset === until)
       break
@@ -93,7 +93,7 @@ function* allTemplateQuoted(cursor: Cursor, regexes: Array<[number, number]>): G
 
       let depth = 1
 
-      for (const type of all(cursor, regexes)) {
+      for (const type of chars(cursor, regexes)) {
         if (type !== "code") {
           yield type
           continue
@@ -132,7 +132,7 @@ function* allTemplateQuoted(cursor: Cursor, regexes: Array<[number, number]>): G
   }
 }
 
-export function* all(cursor: Cursor, regexes: Array<[number, number]>): Generator<CharType> {
+export function* chars(cursor: Cursor, regexes: Array<[number, number]>): Generator<CharType> {
   for (const _ of cursor) {
     if (cursor.text[cursor.offset] === "`") {
       yield* allTemplateQuoted(cursor, regexes)

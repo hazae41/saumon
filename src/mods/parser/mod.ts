@@ -1,4 +1,4 @@
-import { all } from "@/libs/chars/mod.ts";
+import { chars } from "@/libs/chars/mod.ts";
 import { getAllRegexes } from "@/libs/regex/mod.ts";
 import { replace } from "@/libs/replace/mod.ts";
 import { Cursor } from "../../libs/cursor/mod.ts";
@@ -9,7 +9,7 @@ function readNextCall(text: string, index: number, regexes: Array<[number, numbe
 
   const cursor = new Cursor(text)
 
-  for (const type of all(cursor, regexes)) {
+  for (const type of chars(cursor, regexes)) {
     if (cursor.offset < index)
       continue
     if (cursor.offset === index && type !== "code")
