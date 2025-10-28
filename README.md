@@ -26,7 +26,7 @@ deno install -gfn saumon -RW jsr:@hazae41/saumon/bin
 `data.macro.ts` (input)
 
 ```tsx
-const data = $run$(() => fetch("/api/data").then(r => r.json()))
+const data = $$(() => fetch("/api/data").then(r => r.json()).then(JSON.stringify))
 ```
 
 `data.ts` (output)
@@ -40,11 +40,7 @@ const data = { ... }
 `log.macro.ts` (input)
 
 ```ts
-function $log$(x: string) {
-  return `console.log("${x}")`
-}
-
-$log$("hello world")
+$$(() => `console.log("hello world")`)
 ```
 
 `log.ts` (output)
@@ -59,18 +55,22 @@ A macro is like a regular JS function, but the compiler will replace all its cal
 
 ### CLI
 
-You need to install [Bun](https://bun.sh)
+You need to install Deno
+
+```bash
+npm install -g deno
+```
 
 You can transform a single file
 
 ```bash
-saumon build ./src/test.macro.ts
+saumon ./src/test.macro.ts
 ```
 
 Or a whole directory
 
 ```bash
-saumon build -r ./src
+saumon ./src/**/**.macro.ts
 ```
 
 ### Files 

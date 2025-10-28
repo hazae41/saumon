@@ -14,9 +14,6 @@ process.addListener("SIGINT", () => process.exit(0))
 const module = new URL("./mods/runner/mod.ts", import.meta.url)
 
 const spawn = async (entrypoint: string) => {
-  if (!/\.macro\.(c|m)?(t|j)s(x?)$/.test(entrypoint))
-    throw new Error(`Not a macro file`)
-
   const input = await readFile(entrypoint, "utf8")
 
   const compiler = parse(input)
@@ -70,7 +67,8 @@ const spawn = async (entrypoint: string) => {
 const spawns = new Array<Promise<void>>()
 
 for (const path of process.argv.slice(2))
-  spawns.push(spawn(path))
+  if (/\.macro\.(c|m)?(t|j)s(x?)$/.test(path))
+    spawns.push(spawn(path))
 
 await Promise.all(spawns)
 
