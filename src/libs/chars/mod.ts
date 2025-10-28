@@ -1,4 +1,4 @@
-import { unclose } from "@/libs/iterable/mod.ts";
+import { unclose } from "@/libs/unclose/mod.ts";
 import { getSliceAt, isEndBlockCommentedAt, isEscapedAt, isLineCommentedAt, isStartBlockCommentedAt, type Cursor } from "../cursor/mod.ts";
 
 export type CharType =
