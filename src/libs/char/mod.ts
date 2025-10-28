@@ -195,15 +195,15 @@ export function getRegexes(text: string) {
   return regxs
 }
 
-export function getRegex(regexes: Array<[number, number]>, index: Index) {
-  for (const regex of regexes) {
-    const [start, end] = regex
+export function getSliceAt(index: Index, slices: Array<[number, number]>) {
+  for (const slice of slices) {
+    const [start, end] = slice
 
     if (index.value < start)
       return
 
     if (index.value < end)
-      return regex
+      return slice
 
     continue
   }
@@ -244,7 +244,7 @@ export function* allTyped(text: string, regexes: Array<[number, number]>, index:
       continue
     }
 
-    const regex = getRegex(regexes, index)
+    const regex = getSliceAt(index, regexes)
 
     if (regex != null) {
       const [_start, end] = regex
