@@ -17,5 +17,4 @@ function* g() {
   }
 }
 
-for (const _ of g())
-  console.log(cursor.offset, cursor.text[cursor.offset])
+for (const _ of g()) console.log(cursor.offset, cursor.text[cursor.offset])
