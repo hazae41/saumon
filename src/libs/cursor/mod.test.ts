@@ -1,4 +1,4 @@
-import { Cursor } from "../../libs/cursor/mod.ts";
+import { Cursor } from "./mod.ts";
 
 const cursor = new Cursor(`Lorem ipsum.`)
 
