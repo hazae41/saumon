@@ -70,7 +70,7 @@ saumon ./src/test.macro.ts
 Or a whole directory
 
 ```bash
-saumon ./src/**/**.macro.ts
+saumon ./src/**/**
 ```
 
 ### Files 
