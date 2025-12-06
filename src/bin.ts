@@ -14,8 +14,8 @@ process.addListener("exit", () => stack.dispose())
 process.addListener("SIGINT", () => process.exit(1))
 process.addListener("SIGTERM", () => process.exit(1))
 
-addEventListener("unhandledrejection", () => stack.dispose())
-addEventListener("error", () => stack.dispose())
+addEventListener?.("unhandledrejection", () => stack.dispose())
+addEventListener?.("error", () => stack.dispose())
 
 const module = new URL("./mods/runner/mod.ts", import.meta.url)
 
