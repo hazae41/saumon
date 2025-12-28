@@ -3,7 +3,7 @@
 Ultra simple macro system for TypeScript
 
 ```bash
-deno install -gf -RW @hazae41/saumon
+deno install -gf -RW npm:@hazae41/saumon --unstable-worker-options
 ```
 
 [**📦 NPM**](https://www.npmjs.com/package/@hazae41/saumon)
@@ -45,6 +45,20 @@ $$(() => `console.log("hello world")`)
 
 ```ts
 console.log("hello world")
+```
+
+## Setup
+
+Install Deno
+
+```bash
+npm install -g deno
+```
+
+Install Saumon with Deno
+
+```bash
+deno install -gf -RW npm:@hazae41/saumon --unstable-worker-options
 ```
 
 ## Usage

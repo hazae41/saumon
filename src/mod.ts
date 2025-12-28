@@ -22,7 +22,7 @@ if ("addEventListener" in globalThis) {
 }
 
 if (import.meta.main) {
-  const module = new URL("./mods/runner/mod.ts", import.meta.url)
+  const module = new URL("./mods/runner/mod.js", import.meta.url)
 
   const spawn = async (entrypoint: string) => {
     const input = await readFile(entrypoint, "utf8")
