@@ -51,9 +51,13 @@ console.log("hello world")
 
 - With Deno and NPM (local install)
 
+Install Deno and Saumon locally
+
 ```bash
-npm install -D @hazae41/saumon
+npm install -D deno @hazae41/saumon
 ```
+
+Write your script with Deno
 
 ```json
 "scripts": {
@@ -61,15 +65,21 @@ npm install -D @hazae41/saumon
 }
 ```
 
+Run your script
+
 ```bash
 npm run generate
 ```
 
 - With Bun and NPM (local install)
 
+Install Bun and Saumon locally
+
 ```bash
-npm install -D @hazae41/saumon
+npm install -D bun @hazae41/saumon
 ```
+
+Write your script with Bun
 
 ```json
 "scripts": {
@@ -77,15 +87,27 @@ npm install -D @hazae41/saumon
 }
 ```
 
+Run your script
+
 ```bash
 npm run generate
 ```
 
-- With Deno (global install)
+- With Deno (global install) (not recommended)
+
+Install Deno globally
+
+```bash
+npm install -g deno
+```
+
+Install Saumon globally with Deno
 
 ```bash
 deno install -gf -RW --unstable-worker-options npm:@hazae41/saumon
 ```
+
+Run Saumon with Deno
 
 ```bash
 saumon ./src/**/**
@@ -93,11 +115,27 @@ saumon ./src/**/**
 
 - With Deno (just-in-time) (not recommended)
 
+Install Deno globally
+
+```bash
+npm install -g deno
+```
+
+Run Saumon with Deno
+
 ```bash
 deno x --unstable-worker-options -RW npm:@hazae41/saumon ./src/**/**
 ```
 
 - With Bun (just-in-time) (not recommended)
+
+Install Bun globally
+
+```bash
+npm install -g bun
+```
+
+Run Saumon with Bun
 
 ```bash
 bun x --bun @hazae41/saumon ./src/**/**
