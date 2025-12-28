@@ -4,8 +4,11 @@
   },
   "compilerOptions": {
     "lib": [
+      "esnext",
+      "dom",
       "deno.ns",
-      "deno.worker"
+      "deno.worker",
+      "deno.unstable"
     ]
   },
   "unstable": [
