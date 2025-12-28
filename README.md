@@ -3,7 +3,7 @@
 Ultra simple macro system for TypeScript
 
 ```bash
-deno install -gf -RW npm:@hazae41/saumon --unstable-worker-options
+npm install -D @hazae41/saumon
 ```
 
 [**📦 NPM**](https://www.npmjs.com/package/@hazae41/saumon)
@@ -49,16 +49,58 @@ console.log("hello world")
 
 ## Setup
 
-Install Deno
+- With Deno and NPM (local install)
 
 ```bash
-npm install -g deno
+npm install -D @hazae41/saumon
 ```
 
-Install Saumon with Deno
+```json
+"scripts": {
+  "generate": "deno x --unstable-worker-options saumon ./src/**/**"
+}
+```
 
 ```bash
-deno install -gf -RW npm:@hazae41/saumon --unstable-worker-options
+npm run generate
+```
+
+- With Bun and NPM (local install)
+
+```bash
+npm install -D @hazae41/saumon
+```
+
+```json
+"scripts": {
+  "generate": "bun x --bun saumon ./src/**/**"
+}
+```
+
+```bash
+npm run generate
+```
+
+- With Deno (global install)
+
+```bash
+deno install -gf -RW --unstable-worker-options npm:@hazae41/saumon
+```
+
+```bash
+saumon ./src/**/**
+```
+
+- With Deno (just-in-time) (not recommended)
+
+```bash
+deno x --unstable-worker-options -RW npm:@hazae41/saumon ./src/**/**
+```
+
+- With Bun (just-in-time) (not recommended)
+
+```bash
+bun x --bun @hazae41/saumon ./src/**/**
 ```
 
 ## Usage
