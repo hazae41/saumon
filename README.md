@@ -3,14 +3,10 @@
 Ultra simple macro system for TypeScript
 
 ```bash
-npm install @hazae41/saumon
+deno install -gf -RW @hazae41/saumon
 ```
 
-```bash
-deno install -gfn saumon -RW jsr:@hazae41/saumon/bin
-```
-
-[**📦 NPM**](https://www.npmjs.com/package/@hazae41/saumon) • [**📦 JSR**](https://jsr.io/@hazae41/saumon)
+[**📦 NPM**](https://www.npmjs.com/package/@hazae41/saumon)
 
 ## Goals
 - Ultra simple and minimalist
@@ -68,16 +64,6 @@ Or a whole directory
 ```bash
 saumon ./src/**/**
 ```
-
-### TypeScript support
-
-If you want to transform TypeScript code, ensure your runtime allows you to dynamically `import()` TypeScript
-
-- Deno, focused on security, can import TypeScript (recommended)
-
-- Bun, focused on performances, can import TypeScript
-
-- Node, focused on compatibility, can't import TypeScript (as of 2025, it only supports type-stripping)
 
 ### Files 
 
