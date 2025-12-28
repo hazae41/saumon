@@ -49,7 +49,7 @@ console.log("hello world")
 
 ## Setup
 
-- With Deno and NPM (local install)
+### With Deno and NPM (local install)
 
 Install Deno and Saumon locally
 
@@ -71,7 +71,7 @@ Run your script
 npm run generate
 ```
 
-- With Bun and NPM (local install)
+### With Bun and NPM (local install)
 
 Install Bun and Saumon locally
 
@@ -93,7 +93,7 @@ Run your script
 npm run generate
 ```
 
-- With Deno (global install) (not recommended)
+### With Deno (global install) (not recommended)
 
 Install Deno globally
 
@@ -113,7 +113,7 @@ Run Saumon with Deno
 saumon ./src/**/**
 ```
 
-- With Deno (just-in-time) (not recommended)
+### With Deno (just-in-time) (not recommended)
 
 Install Deno globally
 
@@ -127,7 +127,7 @@ Run Saumon with Deno
 deno x --unstable-worker-options -RW npm:@hazae41/saumon ./src/**/**
 ```
 
-- With Bun (just-in-time) (not recommended)
+### With Bun (just-in-time) (not recommended)
 
 Install Bun globally
 
