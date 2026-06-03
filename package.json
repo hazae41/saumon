@@ -21,9 +21,9 @@
   },
   "devDependencies": {
     "@hazae41/tscousin": "^1.0.28",
-    "@types/node": "^25.0.3",
-    "deno": "^2.6.3",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.9.1",
+    "deno": "^2.8.2",
+    "typescript": "^6.0.3"
   },
   "keywords": [
     "phobos",
@@ -45,6 +45,6 @@
     "saumon": "./out/mod.js"
   },
   "dependencies": {
-    "@hazae41/jsonrpc": "^1.1.11"
+    "@hazae41/jsonrpc": "^1.2.0"
   }
 }
