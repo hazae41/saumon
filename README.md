@@ -22,6 +22,8 @@ npm install -D @hazae41/saumon
 `data.macro.ts` (input)
 
 ```tsx
+import { $$ } from "@hazae41/saumon"
+
 const data = $$(() => fetch("/api/data").then(r => r.json()).then(JSON.stringify))
 ```
 
