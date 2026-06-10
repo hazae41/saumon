@@ -1,6 +1,6 @@
 # Saumon 🐟
 
-Ultra simple macro system for TypeScript
+Ultra simple macro system for the web
 
 ```bash
 npm install -D @hazae41/saumon

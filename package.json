@@ -2,7 +2,7 @@
   "type": "module",
   "name": "@hazae41/saumon",
   "version": "1.0.4",
-  "description": "Ultra simple macro system for TypeScript",
+  "description": "Ultra simple macro system for the web",
   "repository": "github:hazae41/phobos",
   "author": "hazae41",
   "license": "MIT",
