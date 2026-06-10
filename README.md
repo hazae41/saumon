@@ -292,7 +292,7 @@ console.log(`x is ${x}`) // exact same as above
 If you use Deno as your runtime, you can benefit from it's permissions system
 
 ```bash
-$ deno run -RW ./src/bin.ts ./test/fetch.macro.ts
+$ saumon ./fetch.macro.ts
 ┏ ⚠️  Deno requests net access to "dummyjson.com:443".
 ┠─ Requested by `fetch()` API.
 ┠─ To see a stack trace for this prompt, set the DENO_TRACE_PERMISSIONS environmental variable.
