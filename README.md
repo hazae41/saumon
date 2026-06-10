@@ -289,7 +289,7 @@ console.log(`x is ${x}`) // exact same as above
 
 ### Permissions
 
-If you use Deno as your runtime, you can benefit from it's permissions based-security
+If you use Deno as your runtime, you can benefit from it's permissions system
 
 ```bash
 $ deno run -RW ./src/bin.ts ./test/fetch.macro.ts
