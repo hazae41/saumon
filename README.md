@@ -61,14 +61,14 @@ Write your script with Deno
 
 ```json
 "scripts": {
-  "generate": "deno x --unstable-worker-options saumon ./src/**/**"
+  "process": "zsh -c 'deno x --unstable-worker-options saumon ./src/**/**'",
 }
 ```
 
 Run your script
 
 ```bash
-npm run generate
+npm run process
 ```
 
 ### With Bun and NPM (local install)
@@ -83,14 +83,14 @@ Write your script with Bun
 
 ```json
 "scripts": {
-  "generate": "bun x --bun saumon ./src/**/**"
+  "process": "zsh -c 'bun x --bun saumon ./src/**/**'"
 }
 ```
 
 Run your script
 
 ```bash
-npm run generate
+npm run process
 ```
 
 ### With Deno (global install) (not recommended)
